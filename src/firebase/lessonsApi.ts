@@ -95,6 +95,24 @@ export const getLessonsByCourseId = async (courseId: string): Promise<Lesson[]> 
     }
 };
 
+// קבלת כל השיעורים (מכל הקורסים)
+export const getAllLessons = async (): Promise<Lesson[]> => {
+    try {
+        const querySnapshot = await getDocs(collection(db, 'lessons'));
+        const lessons = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            date: doc.data().date?.toDate() || new Date(),
+            createdAt: doc.data().createdAt?.toDate() || new Date()
+        } as Lesson));
+        
+        // מיון לפי תאריך ב-client side
+        return lessons.sort((a, b) => a.date.getTime() - b.date.getTime());
+    } catch (error: any) {
+        throw new Error(error.message || 'שגיאה בקבלת כל השיעורים');
+    }
+};
+
 // קבלת שיעור לפי ID
 export const getLessonById = async (lessonId: string): Promise<Lesson | null> => {
     try {
