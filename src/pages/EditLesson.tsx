@@ -10,7 +10,6 @@ import {
     Alert,
     CircularProgress,
     Grid,
-    Rating,
     MenuItem,
     Select,
     FormControl,
@@ -30,6 +29,7 @@ import { Link as LinkIcon } from '@mui/icons-material';
 import { getLessonById, updateLesson } from '../firebase/lessonsApi';
 import { getUsers, type User } from '../firebase/usersApi';
 import { getSharedFiles, type SharedFile } from '../firebase/sharedFilesApi';
+import RichTextEditor from '../components/RichTextEditor';
 
 export default function EditLesson() {
     const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
@@ -39,8 +39,8 @@ export default function EditLesson() {
         date: '',
         startTime: '',
         endTime: '',
+        taughtInLesson: '',
         description: '',
-        rating: 0,
         instructorId: '',
         files: [] as Array<{ id: string; name: string; url: string; type: string }>
     });
@@ -139,8 +139,8 @@ export default function EditLesson() {
                     date: lesson.date.toISOString().split('T')[0],
                     startTime: lesson.startTime,
                     endTime: lesson.endTime,
+                    taughtInLesson: lesson.taughtInLesson || '',
                     description: lesson.description || '',
-                    rating: lesson.rating || 0,
                     instructorId: lesson.instructorId || '',
                     files: files
                 });
@@ -173,12 +173,6 @@ export default function EditLesson() {
     };
 
 
-    const handleRatingChange = (_event: React.SyntheticEvent, newValue: number | null) => {
-        setFormData({
-            ...formData,
-            rating: newValue || 0
-        });
-    };
 
     const handleOpenFileDialog = () => {
         setFileDialogOpen(true);
@@ -256,8 +250,8 @@ export default function EditLesson() {
                 date: new Date(formData.date),
                 startTime: formData.startTime,
                 endTime: formData.endTime,
+                taughtInLesson: formData.taughtInLesson || undefined,
                 description: formData.description || undefined,
-                rating: formData.rating > 0 ? formData.rating : undefined,
                 instructorId: formData.instructorId,
                 instructorName: selectedInstructor.name,
                 files: formData.files
@@ -283,7 +277,7 @@ export default function EditLesson() {
     }
 
     return (
-        <Container maxWidth="md">
+        <Container maxWidth="md" dir="rtl">
             <Box sx={{ mt: 4, mb: 4 }}>
                 <Paper elevation={3} sx={{ p: 4 }}>
                     <Typography variant="h4" component="h1" gutterBottom align="center">
@@ -296,74 +290,7 @@ export default function EditLesson() {
                     )}
                     <form onSubmit={handleSubmit}>
                         <Grid container spacing={3}>
-                            {/* @ts-expect-error - MUI v7 Grid types issue */}
-                            <Grid item xs={12}>
-                                <TextField
-                                    fullWidth
-                                    label="שם השיעור"
-                                    name="title"
-                                    value={formData.title}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </Grid>
-                            {/* @ts-expect-error - MUI v7 Grid types issue */}
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    fullWidth
-                                    label="תאריך"
-                                    name="date"
-                                    type="date"
-                                    value={formData.date}
-                                    onChange={handleChange}
-                                    InputLabelProps={{
-                                        shrink: true,
-                                    }}
-                                    required
-                                />
-                            </Grid>
-                            {/* @ts-expect-error - MUI v7 Grid types issue */}
-                            <Grid item xs={12} sm={3}>
-                                <TextField
-                                    fullWidth
-                                    label="שעת התחלה"
-                                    name="startTime"
-                                    type="time"
-                                    value={formData.startTime}
-                                    onChange={handleChange}
-                                    InputLabelProps={{
-                                        shrink: true,
-                                    }}
-                                    required
-                                />
-                            </Grid>
-                            {/* @ts-expect-error - MUI v7 Grid types issue */}
-                            <Grid item xs={12} sm={3}>
-                                <TextField
-                                    fullWidth
-                                    label="שעת סיום"
-                                    name="endTime"
-                                    type="time"
-                                    value={formData.endTime}
-                                    onChange={handleChange}
-                                    InputLabelProps={{
-                                        shrink: true,
-                                    }}
-                                    required
-                                />
-                            </Grid>
-                            {/* @ts-expect-error - MUI v7 Grid types issue */}
-                            <Grid item xs={12}>
-                                <TextField
-                                    fullWidth
-                                    label="תיאור השיעור"
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                    multiline
-                                    rows={4}
-                                />
-                            </Grid>
+                            {/* 1. מדריך */}
                             {/* @ts-expect-error - MUI v7 Grid types issue */}
                             <Grid item xs={12}>
                                 <FormControl fullWidth required>
@@ -383,19 +310,72 @@ export default function EditLesson() {
                                     </Select>
                                 </FormControl>
                             </Grid>
+                            {/* 2. שם השיעור */}
                             {/* @ts-expect-error - MUI v7 Grid types issue */}
                             <Grid item xs={12}>
-                                <Box>
-                                    <Typography component="legend" gutterBottom>
-                                        דירוג
-                                    </Typography>
-                                    <Rating
-                                        name="rating"
-                                        value={formData.rating}
-                                        onChange={handleRatingChange}
-                                    />
-                                </Box>
+                                <TextField
+                                    fullWidth
+                                    label="שם השיעור"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleChange}
+                                    required
+                                    inputProps={{ dir: 'rtl', style: { textAlign: 'right' } }}
+                                    InputLabelProps={{ style: { direction: 'rtl' } }}
+                                />
                             </Grid>
+                            {/* 3. תאריך */}
+                            {/* @ts-expect-error - MUI v7 Grid types issue */}
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    label="תאריך"
+                                    name="date"
+                                    type="date"
+                                    value={formData.date}
+                                    onChange={handleChange}
+                                    InputLabelProps={{
+                                        shrink: true,
+                                        style: { direction: 'rtl' }
+                                    }}
+                                    required
+                                />
+                            </Grid>
+                            {/* 4. שעת התחלה */}
+                            {/* @ts-expect-error - MUI v7 Grid types issue */}
+                            <Grid item xs={12} sm={3}>
+                                <TextField
+                                    fullWidth
+                                    label="שעת התחלה"
+                                    name="startTime"
+                                    type="time"
+                                    value={formData.startTime}
+                                    onChange={handleChange}
+                                    InputLabelProps={{
+                                        shrink: true,
+                                        style: { direction: 'rtl' }
+                                    }}
+                                    required
+                                />
+                            </Grid>
+                            {/* 5. שעת סיום */}
+                            {/* @ts-expect-error - MUI v7 Grid types issue */}
+                            <Grid item xs={12} sm={3}>
+                                <TextField
+                                    fullWidth
+                                    label="שעת סיום"
+                                    name="endTime"
+                                    type="time"
+                                    value={formData.endTime}
+                                    onChange={handleChange}
+                                    InputLabelProps={{
+                                        shrink: true,
+                                        style: { direction: 'rtl' }
+                                    }}
+                                    required
+                                />
+                            </Grid>
+                            {/* 6. קבצים */}
                             {/* @ts-expect-error - MUI v7 Grid types issue */}
                             <Grid item xs={12}>
                                 <Typography variant="subtitle2" gutterBottom>קבצים</Typography>
@@ -449,6 +429,33 @@ export default function EditLesson() {
                                         ))}
                                     </Box>
                                 )}
+                            </Grid>
+                            {/* 7. הועבר בשיעור */}
+                            {/* @ts-expect-error - MUI v7 Grid types issue */}
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="הועבר בשיעור"
+                                    name="taughtInLesson"
+                                    value={formData.taughtInLesson}
+                                    onChange={handleChange}
+                                    multiline
+                                    rows={3}
+                                    inputProps={{ dir: 'rtl', style: { textAlign: 'right' } }}
+                                    InputLabelProps={{ style: { direction: 'rtl' } }}
+                                />
+                            </Grid>
+                            {/* 8. תיאור השיעור */}
+                            {/* @ts-expect-error - MUI v7 Grid types issue */}
+                            <Grid item xs={12}>
+                                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                                    תיאור השיעור
+                                </Typography>
+                                <RichTextEditor
+                                    value={formData.description}
+                                    onChange={(value) => setFormData({ ...formData, description: value })}
+                                    placeholder="הזן תיאור מפורט של השיעור..."
+                                />
                             </Grid>
                         </Grid>
                         <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>

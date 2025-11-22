@@ -21,6 +21,7 @@ export interface Lesson {
     endTime: string;
     instructorId: string;
     instructorName?: string;
+    taughtInLesson?: string;
     description?: string;
     files?: Array<{ id: string; name: string; url: string; type: string }>;
     rating?: number;
@@ -35,6 +36,7 @@ export interface LessonData {
     endTime: string;
     instructorId: string;
     instructorName?: string;
+    taughtInLesson?: string;
     description?: string;
     files?: Array<{ id: string; name: string; url: string; type: string }>;
     rating?: number;
@@ -56,6 +58,7 @@ export const createLesson = async (data: LessonData): Promise<string> => {
 
         // מוסיף רק שדות שאינם undefined
         if (data.instructorName) cleanData.instructorName = data.instructorName;
+        if (data.taughtInLesson) cleanData.taughtInLesson = data.taughtInLesson;
         if (data.description) cleanData.description = data.description;
         if (data.files && data.files.length > 0) cleanData.files = data.files;
         if (data.rating !== undefined && data.rating !== null && data.rating > 0) {
@@ -125,6 +128,7 @@ export const updateLesson = async (lessonId: string, data: Partial<LessonData & 
         if (data.endTime !== undefined) updateData.endTime = data.endTime;
         if (data.instructorId !== undefined) updateData.instructorId = data.instructorId;
         if (data.instructorName !== undefined) updateData.instructorName = data.instructorName;
+        if (data.taughtInLesson !== undefined) updateData.taughtInLesson = data.taughtInLesson;
         if (data.description !== undefined) updateData.description = data.description;
         if (data.files !== undefined) updateData.files = data.files;
         if (data.rating !== undefined && data.rating !== null) {

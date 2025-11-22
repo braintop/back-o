@@ -142,57 +142,55 @@ export default function CourseDetails() {
                 >
                     חזרה לקורסים
                 </Button>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    {lessons.length > 0 && (
-                        <Button
-                            variant="outlined"
-                            color="success"
-                            startIcon={<FileDownload />}
-                            onClick={exportToExcel}
-                        >
-                            ייצא ל-Excel
-                        </Button>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexDirection: 'row-reverse' }}>
+                    {course?.imageUrl && (
+                        <CardMedia
+                            component="img"
+                            image={course.imageUrl}
+                            alt={course.name}
+                            sx={{ objectFit: 'cover', borderRadius: 1, width: '50px', height: '50px' }}
+                        />
                     )}
-                    <Button
-                        variant="outlined"
-                        startIcon={<Edit />}
-                        onClick={() => navigate(`/courses/${courseId}/edit`)}
-                    >
-                        ערוך קורס
-                    </Button>
-                    <Button
-                        variant="contained"
-                        startIcon={<Add />}
-                        onClick={() => navigate(`/courses/${courseId}/lessons/new`)}
-                    >
-                        הוסף שיעור
-                    </Button>
+                    {course && (
+                        <>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                <Typography variant="h5" component="h1" sx={{ fontWeight: 'bold' }}>
+                                    {course.name}
+                                </Typography>
+                                {course.description && (
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                                        {course.description}
+                                    </Typography>
+                                )}
+                            </Box>
+                            <Button
+                                variant="contained"
+                                startIcon={<Add />}
+                                onClick={() => navigate(`/courses/${courseId}/lessons/new`)}
+                            >
+                                הוסף שיעור
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                startIcon={<Edit />}
+                                onClick={() => navigate(`/courses/${courseId}/edit`)}
+                            >
+                                ערוך קורס
+                            </Button>
+                            {lessons.length > 0 && (
+                                <Button
+                                    variant="outlined"
+                                    color="success"
+                                    startIcon={<FileDownload />}
+                                    onClick={exportToExcel}
+                                >
+                                    ייצא ל-Excel
+                                </Button>
+                            )}
+                        </>
+                    )}
                 </Box>
             </Box>
-
-            {course && (
-                <Paper sx={{ p: 3, mb: 4 }}>
-                    {course.imageUrl && (
-                        <Box sx={{ mb: 3 }}>
-                            <CardMedia
-                                component="img"
-                                height="300"
-                                image={course.imageUrl}
-                                alt={course.name}
-                                sx={{ objectFit: 'cover', borderRadius: 2 }}
-                            />
-                        </Box>
-                    )}
-                    <Typography variant="h4" component="h1" gutterBottom>
-                        {course.name}
-                    </Typography>
-                    {course.description && (
-                        <Typography variant="body1" color="text.secondary">
-                            {course.description}
-                        </Typography>
-                    )}
-                </Paper>
-            )}
 
             {error && (
                 <Alert severity="error" sx={{ mb: 2 }}>
@@ -209,7 +207,7 @@ export default function CourseDetails() {
                                 <TableCell>שם שיעור</TableCell>
                                 <TableCell>שעות</TableCell>
                                 <TableCell>מדריך</TableCell>
-                                <TableCell>תיאור</TableCell>
+                                <TableCell>הועבר בשיעור</TableCell>
                                 <TableCell>דירוג</TableCell>
                                 <TableCell>פעולות</TableCell>
                             </TableRow>
@@ -248,7 +246,7 @@ export default function CourseDetails() {
                                         </TableCell>
                                         <TableCell>
                                             <Typography variant="body2" sx={{ maxWidth: 300 }}>
-                                                {lesson.description || '-'}
+                                                {lesson.taughtInLesson || '-'}
                                             </Typography>
                                         </TableCell>
                                         <TableCell>

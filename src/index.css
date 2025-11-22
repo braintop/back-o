@@ -1,0 +1,71 @@
+/* Tiptap Editor Styles */
+.ProseMirror {
+  outline: none;
+}
+
+.ProseMirror[dir="rtl"] p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: right;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror[dir="ltr"] p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror[dir="rtl"] ul,
+.ProseMirror[dir="rtl"] ol {
+  padding-right: 1.5em;
+  padding-left: 0;
+}
+
+.ProseMirror[dir="ltr"] ul,
+.ProseMirror[dir="ltr"] ol {
+  padding-left: 1.5em;
+  padding-right: 0;
+}
+
+.ProseMirror a {
+  color: #1976d2;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ProseMirror mark {
+  background-color: #fef08a;
+  border-radius: 0.25rem;
+  padding: 0.125rem 0;
+}
+
+.ProseMirror .video-embed {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+  margin: 1rem 0;
+  clear: both;
+}
+
+.ProseMirror .video-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* וידאו בתוך פסקאות */
+.ProseMirror p .video-embed,
+.ProseMirror div .video-embed {
+  display: block;
+  margin: 1rem 0;
+}
+
