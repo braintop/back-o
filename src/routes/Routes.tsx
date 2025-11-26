@@ -7,6 +7,11 @@ import Courses from '../pages/Courses';
 import CreateCourse from '../pages/CreateCourse';
 import EditCourse from '../pages/EditCourse';
 import CourseDetails from '../pages/CourseDetails';
+import VideoCourses from '../pages/video/VideoCourses';
+import CreateVideoCourse from '../pages/video/CreateVideoCourse';
+import VideoCourseDetails from '../pages/video/VideoCourseDetails';
+import VideoCoursesView from '../pages/video/VideoCoursesView';
+import VideoCourseView from '../pages/video/VideoCourseView';
 import CreateLesson from '../pages/CreateLesson';
 import EditLesson from '../pages/EditLesson';
 import SharedFiles from '../pages/SharedFiles';
@@ -38,6 +43,46 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <Courses />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/video-courses" 
+        element={
+          <ProtectedRoute>
+            <VideoCourses />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/video-courses/new" 
+        element={
+          <ProtectedRoute>
+            <CreateVideoCourse />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/video-courses/:courseId" 
+        element={
+          <ProtectedRoute>
+            <VideoCourseDetails />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/video-courses/view" 
+        element={
+          <ProtectedRoute>
+            <VideoCoursesView />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/video-courses/view/:courseId" 
+        element={
+          <ProtectedRoute>
+            <VideoCourseView />
           </ProtectedRoute>
         } 
       />

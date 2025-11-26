@@ -10,6 +10,8 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import SchoolIcon from '@mui/icons-material/School';
 import FolderIcon from '@mui/icons-material/Folder';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -69,6 +71,22 @@ export default function Navbar() {
             sx={{ gap: 1 }}
           >
             קורסים
+          </Button>
+          <Button 
+            color="inherit" 
+            onClick={() => handleNavigation('/video-courses')}
+            startIcon={<AddCircleOutlineIcon />}
+            sx={{ gap: 1 }}
+          >
+            קורסי וידאו +
+          </Button>
+          <Button 
+            color="inherit" 
+            onClick={() => handleNavigation('/video-courses/view')}
+            startIcon={<PlayCircleOutlineIcon />}
+            sx={{ gap: 1 }}
+          >
+            צפייה בקורסי וידאו
           </Button>
           <Button 
             color="inherit" 
