@@ -17,14 +17,15 @@ export interface Lesson {
     courseId: string;
     title: string;
     date: Date;
-    startTime: string;
-    endTime: string;
+    startTime?: string;
+    endTime?: string;
     instructorId: string;
     instructorName?: string;
     taughtInLesson?: string;
     description?: string;
-    files?: Array<{ id: string; name: string; url: string; type: string }>;
+    files?: Array<{ id: string; name: string; url: string; type: string; uploadedBy?: string; uploadedByName?: string }>;
     rating?: number;
+    attendanceChecked?: boolean;
     createdAt: Date;
 }
 
@@ -32,14 +33,15 @@ export interface LessonData {
     courseId: string;
     title: string;
     date: Date;
-    startTime: string;
-    endTime: string;
+    startTime?: string;
+    endTime?: string;
     instructorId: string;
     instructorName?: string;
     taughtInLesson?: string;
     description?: string;
-    files?: Array<{ id: string; name: string; url: string; type: string }>;
+    files?: Array<{ id: string; name: string; url: string; type: string; uploadedBy?: string; uploadedByName?: string }>;
     rating?: number;
+    attendanceChecked?: boolean;
 }
 
 // יצירת שיעור חדש
@@ -50,13 +52,13 @@ export const createLesson = async (data: LessonData): Promise<string> => {
             courseId: data.courseId,
             title: data.title,
             date: Timestamp.fromDate(data.date),
-            startTime: data.startTime,
-            endTime: data.endTime,
             instructorId: data.instructorId,
             createdAt: Timestamp.now()
         };
 
         // מוסיף רק שדות שאינם undefined
+        if (data.startTime) cleanData.startTime = data.startTime;
+        if (data.endTime) cleanData.endTime = data.endTime;
         if (data.instructorName) cleanData.instructorName = data.instructorName;
         if (data.taughtInLesson) cleanData.taughtInLesson = data.taughtInLesson;
         if (data.description) cleanData.description = data.description;
@@ -64,6 +66,7 @@ export const createLesson = async (data: LessonData): Promise<string> => {
         if (data.rating !== undefined && data.rating !== null && data.rating > 0) {
             cleanData.rating = data.rating;
         }
+        if (data.attendanceChecked !== undefined) cleanData.attendanceChecked = data.attendanceChecked;
 
         const docRef = await addDoc(collection(db, 'lessons'), cleanData);
         return docRef.id;
@@ -156,6 +159,9 @@ export const updateLesson = async (lessonId: string, data: Partial<LessonData & 
                 // אם rating הוא 0 או null, מוחקים את השדה
                 updateData.rating = null;
             }
+        }
+        if (data.attendanceChecked !== undefined) {
+            updateData.attendanceChecked = data.attendanceChecked;
         }
         
         await updateDoc(docRef, updateData);

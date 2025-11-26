@@ -23,7 +23,9 @@ import {
     TableCell,
     TableContainer,
     TableHead,
-    TableRow
+    TableRow,
+    Checkbox,
+    FormControlLabel
 } from '@mui/material';
 import { Link as LinkIcon } from '@mui/icons-material';
 import { createLesson } from '../firebase/lessonsApi';
@@ -38,12 +40,11 @@ export default function CreateLesson() {
     const [formData, setFormData] = useState({
         title: '',
         date: '',
-        startTime: '',
-        endTime: '',
         taughtInLesson: '',
         description: '',
         instructorId: '',
-        files: [] as Array<{ id: string; name: string; url: string; type: string }>
+        attendanceChecked: false,
+        files: [] as Array<{ id: string; name: string; url: string; type: string; uploadedBy?: string; uploadedByName?: string }>
     });
     const [users, setUsers] = useState<User[]>([]);
     const [sharedFiles, setSharedFiles] = useState<SharedFile[]>([]);
@@ -120,13 +121,19 @@ export default function CreateLesson() {
     const handleSelectFile = (file: SharedFile) => {
         // בודק אם הקובץ כבר קיים ברשימה
         if (!formData.files.find(f => f.id === file.id)) {
+            // מצא את המשתמש הנוכחי כדי לקבל את השם
+            const currentUser = users.find(u => u.uid === auth.currentUser?.uid);
+            const currentUserName = currentUser?.name || auth.currentUser?.displayName || 'משתמש לא ידוע';
+            
             setFormData({
                 ...formData,
                 files: [...formData.files, {
                     id: file.id!,
                     name: file.name,
                     url: file.url,
-                    type: file.type
+                    type: file.type,
+                    uploadedBy: auth.currentUser?.uid || '',
+                    uploadedByName: currentUserName
                 }]
             });
         }
@@ -142,13 +149,19 @@ export default function CreateLesson() {
 
     const handleAddCustomFile = () => {
         if (customFileUrl.trim() && customFileName.trim()) {
+            // מצא את המשתמש הנוכחי כדי לקבל את השם
+            const currentUser = users.find(u => u.uid === auth.currentUser?.uid);
+            const currentUserName = currentUser?.name || auth.currentUser?.displayName || 'משתמש לא ידוע';
+            
             setFormData({
                 ...formData,
                 files: [...formData.files, {
                     id: '',
                     name: customFileName.trim(),
                     url: customFileUrl.trim(),
-                    type: customFileType
+                    type: customFileType,
+                    uploadedBy: auth.currentUser?.uid || '',
+                    uploadedByName: currentUserName
                 }]
             });
             setCustomFileUrl('');
@@ -190,10 +203,9 @@ export default function CreateLesson() {
                 courseId,
                 title: formData.title,
                 date: new Date(formData.date),
-                startTime: formData.startTime,
-                endTime: formData.endTime,
                 instructorId: formData.instructorId,
                 instructorName: selectedInstructor.name,
+                attendanceChecked: formData.attendanceChecked,
                 files: formData.files
             };
 
@@ -280,38 +292,23 @@ export default function CreateLesson() {
                                     required
                                 />
                             </Grid>
-                            {/* 4. שעת התחלה */}
+                            {/* 4. בדקתי נוכחות */}
                             {/* @ts-expect-error - MUI v7 Grid types issue */}
-                            <Grid item xs={12} sm={3}>
-                                <TextField
-                                    fullWidth
-                                    label="שעת התחלה"
-                                    name="startTime"
-                                    type="time"
-                                    value={formData.startTime}
-                                    onChange={handleChange}
-                                    InputLabelProps={{
-                                        shrink: true,
-                                        style: { direction: 'rtl' }
-                                    }}
-                                    required
-                                />
-                            </Grid>
-                            {/* 5. שעת סיום */}
-                            {/* @ts-expect-error - MUI v7 Grid types issue */}
-                            <Grid item xs={12} sm={3}>
-                                <TextField
-                                    fullWidth
-                                    label="שעת סיום"
-                                    name="endTime"
-                                    type="time"
-                                    value={formData.endTime}
-                                    onChange={handleChange}
-                                    InputLabelProps={{
-                                        shrink: true,
-                                        style: { direction: 'rtl' }
-                                    }}
-                                    required
+                            <Grid item xs={12} sm={6} sx={{ display: 'flex', alignItems: 'center' }}>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={formData.attendanceChecked}
+                                            onChange={(e) =>
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    attendanceChecked: e.target.checked
+                                                }))
+                                            }
+                                        />
+                                    }
+                                    label="בדקתי נוכחות"
+                                    sx={{ mr: 1 }}
                                 />
                             </Grid>
                             {/* 6. קבצים */}

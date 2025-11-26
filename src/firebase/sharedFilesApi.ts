@@ -21,6 +21,7 @@ export interface SharedFile {
     description?: string;
     createdAt: Date;
     createdBy: string;
+    createdByName?: string;
 }
 
 export interface SharedFileData {
@@ -29,6 +30,7 @@ export interface SharedFileData {
     url: string;
     description?: string;
     createdBy: string;
+    createdByName?: string;
 }
 
 // יצירת קובץ משותף חדש
@@ -45,6 +47,9 @@ export const createSharedFile = async (data: SharedFileData): Promise<string> =>
         // מוסיף רק שדות שאינם undefined
         if (data.description !== undefined && data.description !== null && data.description.trim() !== '') {
             fileData.description = data.description;
+        }
+        if (data.createdByName) {
+            fileData.createdByName = data.createdByName;
         }
         
         const docRef = await addDoc(collection(db, 'sharedFiles'), fileData);
@@ -113,6 +118,9 @@ export const updateSharedFile = async (fileId: string, data: Partial<SharedFileD
             } else {
                 updateData.description = data.description;
             }
+        }
+        if (data.createdByName !== undefined) {
+            updateData.createdByName = data.createdByName;
         }
         
         await updateDoc(docRef, updateData);

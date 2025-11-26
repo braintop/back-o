@@ -17,6 +17,7 @@ export interface Course {
     name: string;
     description: string;
     imageUrl?: string;
+    syllabusLink?: string;
     createdAt: Date;
     createdBy: string;
 }
@@ -25,6 +26,7 @@ export interface CourseData {
     name: string;
     description: string;
     imageUrl?: string;
+    syllabusLink?: string;
     createdBy: string;
 }
 

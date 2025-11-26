@@ -20,6 +20,9 @@ export interface LoginData {
 }
 
 export const registerUser = async (data: RegisterData): Promise<User> => {
+    if (!auth) {
+        throw new Error('Firebase לא מאותחל. אנא הוסף משתני סביבה ב-Vercel Settings > Environment Variables.');
+    }
     try {
         // יצירת משתמש עם אימייל וסיסמה
         const userCredential = await createUserWithEmailAndPassword(
@@ -36,6 +39,9 @@ export const registerUser = async (data: RegisterData): Promise<User> => {
         });
 
         // שמירת המשתמש ב-Firestore
+        if (!db) {
+            throw new Error('Firebase Firestore לא מאותחל. אנא הוסף משתני סביבה ב-Vercel Settings > Environment Variables.');
+        }
         await setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             name: data.firstName,
@@ -50,6 +56,9 @@ export const registerUser = async (data: RegisterData): Promise<User> => {
 };
 
 export const loginUser = async (data: LoginData): Promise<User> => {
+    if (!auth) {
+        throw new Error('Firebase לא מאותחל. אנא הוסף משתני סביבה ב-Vercel Settings > Environment Variables.');
+    }
     try {
         // התחברות עם אימייל וסיסמה
         const userCredential = await signInWithEmailAndPassword(
@@ -65,6 +74,9 @@ export const loginUser = async (data: LoginData): Promise<User> => {
 };
 
 export const logoutUser = async (): Promise<void> => {
+    if (!auth) {
+        throw new Error('Firebase לא מאותחל. אנא הוסף משתני סביבה ב-Vercel Settings > Environment Variables.');
+    }
     try {
         await signOut(auth);
     } catch (error: any) {

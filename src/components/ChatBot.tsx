@@ -79,6 +79,28 @@ export default function ChatBot() {
         }
     }, []);
 
+    const renderMessageText = (text: string) => {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const parts = text.split(urlRegex);
+
+        return parts.map((part, index) => {
+            if (/^https?:\/\/[^\s]+$/i.test(part)) {
+                return (
+                    <a
+                        key={index}
+                        href={part}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#1976d2', wordBreak: 'break-all' }}
+                    >
+                        {part}
+                    </a>
+                );
+            }
+            return <span key={index}>{part}</span>;
+        });
+    };
+
     // פונקציה להתחלת זיהוי דיבור
     const handleStartListening = () => {
         if (recognitionRef.current && !isListening) {
@@ -245,7 +267,7 @@ export default function ChatBot() {
                                 }}
                             >
                                 <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', flex: 1 }}>
-                                    {message.text}
+                                    {renderMessageText(message.text)}
                                 </Typography>
                                 {!message.isUser && (
                                     <Tooltip title="השמע בקול">

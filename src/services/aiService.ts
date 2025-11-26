@@ -1,14 +1,16 @@
 import { getCourses } from '../firebase/coursesApi';
 import { getAllLessons } from '../firebase/lessonsApi';
 import { getUsers } from '../firebase/usersApi';
+import { getSharedFiles } from '../firebase/sharedFilesApi';
 
 // פונקציה להכנת נתונים לשאילתה
 async function prepareDataForAI() {
     try {
-        const [courses, allLessons, users] = await Promise.all([
+        const [courses, allLessons, users, sharedFiles] = await Promise.all([
             getCourses(),
             getAllLessons(),
-            getUsers()
+            getUsers(),
+            getSharedFiles()
         ]);
 
         // הכנת נתונים בפורמט JSON
@@ -28,11 +30,26 @@ async function prepareDataForAI() {
                 endTime: lesson.endTime,
                 instructorName: lesson.instructorName || 'לא צוין',
                 taughtInLesson: lesson.taughtInLesson || '',
-                description: lesson.description || ''
+                description: lesson.description || '',
+                files: (lesson.files || []).map(file => ({
+                    id: file.id,
+                    name: file.name,
+                    type: file.type,
+                    url: file.url
+                }))
             })),
             instructors: users.map(user => ({
                 name: user.name,
                 email: user.email
+            })),
+            sharedFiles: sharedFiles.map(file => ({
+                id: file.id,
+                name: file.name,
+                type: file.type,
+                url: file.url,
+                description: file.description || '',
+                createdAt: file.createdAt.toISOString().split('T')[0],
+                createdByName: file.createdByName || ''
             }))
         };
 
@@ -60,10 +77,19 @@ export async function askAI(question: string): Promise<string> {
 הנתונים הזמינים:
 ${data}
 
-שאל את המשתמש: "${question}"
+שאלת המשתמש: "${question}"
 
-אנא ענה בעברית בצורה ברורה ומועילה. אם השאלה מתייחסת לנתונים ספציפיים, השתמש בנתונים שסופקו.
-אם אין נתונים רלוונטיים, אמור זאת בצורה מנומסת.
+הנחיות מענה:
+- ענה בעברית בצורה ברורה וקצרה.
+- אם השאלה מתייחסת לשיעור מסוים, השתמש ברשימת השיעורים (lessons).
+- אם המשתמש מבקש מצגת / PDF / וידאו / קובץ לשיעור, חפש תחילה בקבצים של אותו שיעור (lesson.files).
+- אם לא נמצא שם, חפש ברשימת הקבצים המשותפים (sharedFiles).
+- החזר קישורים ישירים (URL) בפורמט קריא, למשל:
+  - "מצגת: https://..."
+  - "דף עבודה: https://..."
+  - "וידאו: https://..."
+- אם אין קובץ מתאים, כתוב במפורש שאין קובץ כזה במערכת.
+- אם אין נתונים רלוונטיים בכלל, אמור זאת בצורה מנומסת.
 
 תשובה:`;
 

@@ -27,7 +27,8 @@ export default function EditCourse() {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        imageUrl: ''
+        imageUrl: '',
+        syllabusLink: ''
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -60,7 +61,8 @@ export default function EditCourse() {
                 setFormData({
                     name: course.name,
                     description: course.description || '',
-                    imageUrl: course.imageUrl || ''
+                    imageUrl: course.imageUrl || '',
+                    syllabusLink: course.syllabusLink || ''
                 });
             } else {
                 setError('קורס לא נמצא');
@@ -108,7 +110,8 @@ export default function EditCourse() {
             await updateCourse(courseId, {
                 name: formData.name,
                 description: formData.description,
-                imageUrl: formData.imageUrl || undefined
+                imageUrl: formData.imageUrl || undefined,
+                syllabusLink: formData.syllabusLink.trim() || undefined
             });
             navigate(`/courses/${courseId}`);
         } catch (err: any) {
@@ -159,6 +162,16 @@ export default function EditCourse() {
                             margin="normal"
                             multiline
                             rows={4}
+                        />
+                        <TextField
+                            fullWidth
+                            label="לינק לסילבוס"
+                            name="syllabusLink"
+                            value={formData.syllabusLink}
+                            onChange={handleChange}
+                            margin="normal"
+                            placeholder="https://..."
+                            type="url"
                         />
                         <FormControl fullWidth margin="normal">
                             <InputLabel>תמונת הקורס</InputLabel>

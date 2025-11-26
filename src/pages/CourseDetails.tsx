@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Container,
@@ -14,13 +14,14 @@ import {
     TableRow,
     CircularProgress,
     Alert,
-    Rating,
     IconButton,
-    CardMedia
+    CardMedia,
+    TableSortLabel
 } from '@mui/material';
-import { Add, ArrowBack, Edit, FileDownload } from '@mui/icons-material';
+import { Add, ArrowBack, Edit, FileDownload, Link as LinkIcon, Delete, UploadFile } from '@mui/icons-material';
 import { getCourseById, type Course } from '../firebase/coursesApi';
-import { getLessonsByCourseId, type Lesson } from '../firebase/lessonsApi';
+import { getLessonsByCourseId, deleteLesson, createLesson, type Lesson } from '../firebase/lessonsApi';
+import { getUsers, type User } from '../firebase/usersApi';
 import * as XLSX from 'xlsx';
 
 export default function CourseDetails() {
@@ -30,11 +31,17 @@ export default function CourseDetails() {
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [users, setUsers] = useState<User[]>([]);
+    const [uploading, setUploading] = useState(false);
+    const [sortField, setSortField] = useState<'date' | 'title' | 'instructorName'>('date');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         if (courseId) {
             loadCourseAndLessons();
         }
+        loadUsers();
     }, [courseId]);
 
     const loadCourseAndLessons = async () => {
@@ -63,6 +70,15 @@ export default function CourseDetails() {
         }
     };
 
+    const loadUsers = async () => {
+        try {
+            const usersList = await getUsers();
+            setUsers(usersList);
+        } catch (err) {
+            console.error('Error loading users for CSV import:', err);
+        }
+    };
+
     const formatDate = (date: Date) => {
         return new Intl.DateTimeFormat('he-IL', {
             year: 'numeric',
@@ -70,6 +86,190 @@ export default function CourseDetails() {
             day: '2-digit'
         }).format(date);
     };
+
+    const parseCsvDate = (value: string): Date => {
+        const trimmed = value.trim();
+        if (!trimmed) {
+            throw new Error('תאריך ריק');
+        }
+
+        const match = trimmed.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
+        if (match) {
+            const day = parseInt(match[1], 10);
+            const month = parseInt(match[2], 10) - 1;
+            const yearRaw = match[3];
+            const year = parseInt(yearRaw.length === 2 ? `20${yearRaw}` : yearRaw, 10);
+            return new Date(year, month, day);
+        }
+
+        const asDate = new Date(trimmed);
+        if (!isNaN(asDate.getTime())) {
+            return asDate;
+        }
+
+        throw new Error(`תאריך לא תקין: ${value}`);
+    };
+
+    const handleDeleteLesson = async (lessonId?: string) => {
+        if (!lessonId) return;
+
+        const confirmed = window.confirm('האם אתה בטוח שברצונך למחוק את השיעור? לא ניתן לבטל פעולה זו.');
+        if (!confirmed) return;
+
+        try {
+            await deleteLesson(lessonId);
+            setLessons((prev) => prev.filter((lesson) => lesson.id !== lessonId));
+        } catch (err: any) {
+            alert(err.message || 'שגיאה במחיקת שיעור');
+        }
+    };
+
+    const importLessonsFromCsv = async (csvText: string) => {
+        if (!courseId) return;
+
+        const lines = csvText
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+
+        if (lines.length === 0) {
+            throw new Error('קובץ CSV ריק');
+        }
+
+        // שורת כותרת חובה בפורמט: date,email,issue (בסדר כלשהו)
+        const headerParts = lines[0]
+            .split(',')
+            .map((h) => h.trim().toLowerCase());
+
+        const dateIndex = headerParts.indexOf('date');
+        const emailIndex = headerParts.indexOf('email');
+        const issueIndex = headerParts.indexOf('issue');
+
+        if (dateIndex === -1 || emailIndex === -1 || issueIndex === -1) {
+            throw new Error(
+                'שורת הכותרת בקובץ חייבת להכיל את העמודות: date, email, issue (באנגלית).'
+            );
+        }
+
+        const startIndex = 1; // מדלגים על הכותרת
+
+        if (users.length === 0) {
+            await loadUsers();
+        }
+
+        let createdCount = 0;
+        let skippedNoUser = 0;
+        let skippedBadDate = 0;
+
+        for (let i = startIndex; i < lines.length; i++) {
+            const parts = lines[i].split(',').map((p) => p.trim());
+            if (parts.length <= Math.max(dateIndex, emailIndex, issueIndex)) continue;
+
+            const email = parts[emailIndex];
+            const dateStr = parts[dateIndex];
+            const subject = parts[issueIndex];
+
+            if (!email || !dateStr || !subject) continue;
+
+            const instructor = users.find(
+                (u) => u.email.toLowerCase() === email.toLowerCase()
+            );
+
+            if (!instructor) {
+                skippedNoUser++;
+                continue;
+            }
+
+            let date: Date;
+            try {
+                date = parseCsvDate(dateStr);
+            } catch {
+                skippedBadDate++;
+                continue;
+            }
+
+            await createLesson({
+                courseId,
+                title: subject,
+                date,
+                instructorId: instructor.uid,
+                instructorName: instructor.name
+            });
+            createdCount++;
+        }
+
+        if (createdCount === 0) {
+            throw new Error(
+                'לא נוצרו שיעורים מהקובץ. ודא ששורת הכותרת מכילה את העמודות: date, email, issue ושהאימיילים קיימים במערכת.'
+            );
+        }
+
+        let message = `נטענו ${createdCount} שיעורים מהקובץ.`;
+        if (skippedNoUser > 0 || skippedBadDate > 0) {
+            message += ` דולגו ${skippedNoUser} שורות ללא מדריך מתאים ו-${skippedBadDate} שורות עם תאריך לא תקין.`;
+        }
+        alert(message);
+    };
+
+    const handleCsvFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !courseId) return;
+
+        const input = event.target;
+
+        try {
+            setUploading(true);
+            const text = await file.text();
+            await importLessonsFromCsv(text);
+            await loadCourseAndLessons();
+        } catch (err: any) {
+            alert(err.message || 'שגיאה בטעינת השיעורים מהקובץ');
+        } finally {
+            setUploading(false);
+            input.value = '';
+        }
+    };
+
+    const handleUploadButtonClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleSort = (field: 'date' | 'title' | 'instructorName') => {
+        if (sortField === field) {
+            setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
+
+    const sortedLessons = useMemo(() => {
+        const lessonsCopy = [...lessons];
+        return lessonsCopy.sort((a, b) => {
+            switch (sortField) {
+                case 'title': {
+                    const aTitle = a.title || '';
+                    const bTitle = b.title || '';
+                    return sortDirection === 'asc'
+                        ? aTitle.localeCompare(bTitle)
+                        : bTitle.localeCompare(aTitle);
+                }
+                case 'instructorName': {
+                    const aName = a.instructorName || '';
+                    const bName = b.instructorName || '';
+                    return sortDirection === 'asc'
+                        ? aName.localeCompare(bName)
+                        : bName.localeCompare(aName);
+                }
+                case 'date':
+                default: {
+                    const aTime = a.date ? a.date.getTime() : 0;
+                    const bTime = b.date ? b.date.getTime() : 0;
+                    return sortDirection === 'asc' ? aTime - bTime : bTime - aTime;
+                }
+            }
+        });
+    }, [lessons, sortField, sortDirection]);
 
     const exportToExcel = () => {
         if (lessons.length === 0) {
@@ -162,6 +362,19 @@ export default function CourseDetails() {
                                         {course.description}
                                     </Typography>
                                 )}
+                                {course.syllabusLink && (
+                                    <Button
+                                        variant="text"
+                                        size="small"
+                                        startIcon={<LinkIcon />}
+                                        href={course.syllabusLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        sx={{ mt: 0.5, fontSize: '0.875rem' }}
+                                    >
+                                        לינק לסילבוס
+                                    </Button>
+                                )}
                             </Box>
                             <Button
                                 variant="contained"
@@ -176,6 +389,22 @@ export default function CourseDetails() {
                                 onClick={() => navigate(`/courses/${courseId}/edit`)}
                             >
                                 ערוך קורס
+                            </Button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".csv"
+                                style={{ display: 'none' }}
+                                onChange={handleCsvFileChange}
+                            />
+                            <Button
+                                variant="outlined"
+                                color="secondary"
+                                startIcon={<UploadFile />}
+                                onClick={handleUploadButtonClick}
+                                disabled={uploading}
+                            >
+                                טען שיעורים
                             </Button>
                             {lessons.length > 0 && (
                                 <Button
@@ -200,22 +429,44 @@ export default function CourseDetails() {
 
             <Paper>
                 <TableContainer>
-                    <Table>
+                    <Table sx={{ direction: 'rtl' }}>
                         <TableHead>
                             <TableRow>
-                                <TableCell>תאריך</TableCell>
-                                <TableCell>שם שיעור</TableCell>
-                                <TableCell>שעות</TableCell>
-                                <TableCell>מדריך</TableCell>
-                                <TableCell>הועבר בשיעור</TableCell>
-                                <TableCell>דירוג</TableCell>
-                                <TableCell>פעולות</TableCell>
+                                <TableCell align="right" sortDirection={sortField === 'date' ? sortDirection : false}>
+                                    <TableSortLabel
+                                        active={sortField === 'date'}
+                                        direction={sortField === 'date' ? sortDirection : 'asc'}
+                                        onClick={() => handleSort('date')}
+                                    >
+                                        תאריך
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell align="right" sortDirection={sortField === 'title' ? sortDirection : false}>
+                                    <TableSortLabel
+                                        active={sortField === 'title'}
+                                        direction={sortField === 'title' ? sortDirection : 'asc'}
+                                        onClick={() => handleSort('title')}
+                                    >
+                                        שם שיעור
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell align="right" sortDirection={sortField === 'instructorName' ? sortDirection : false}>
+                                    <TableSortLabel
+                                        active={sortField === 'instructorName'}
+                                        direction={sortField === 'instructorName' ? sortDirection : 'asc'}
+                                        onClick={() => handleSort('instructorName')}
+                                    >
+                                        מדריך
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell align="right">הועבר בשיעור</TableCell>
+                                <TableCell align="right">פעולות</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {lessons.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                                    <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                                         <Typography variant="body2" color="text.secondary">
                                             אין שיעורים עדיין
                                         </Typography>
@@ -230,39 +481,37 @@ export default function CourseDetails() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                lessons.map((lesson) => (
+                                sortedLessons.map((lesson) => (
                                     <TableRow key={lesson.id} hover>
-                                        <TableCell>{formatDate(lesson.date)}</TableCell>
-                                        <TableCell>
+                                        <TableCell align="right">{formatDate(lesson.date)}</TableCell>
+                                        <TableCell align="right">
                                             <Typography variant="body2" fontWeight="medium">
                                                 {lesson.title}
                                             </Typography>
                                         </TableCell>
-                                        <TableCell>
-                                            {lesson.startTime} - {lesson.endTime}
-                                        </TableCell>
-                                        <TableCell>
+                                        <TableCell align="right">
                                             {lesson.instructorName || 'לא צוין'}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell align="right">
                                             <Typography variant="body2" sx={{ maxWidth: 300 }}>
                                                 {lesson.taughtInLesson || '-'}
                                             </Typography>
                                         </TableCell>
-                                        <TableCell>
-                                            {lesson.rating ? (
-                                                <Rating value={lesson.rating} readOnly size="small" />
-                                            ) : (
-                                                '-'
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
+                                        <TableCell align="right">
                                             <IconButton
                                                 size="small"
                                                 onClick={() => navigate(`/courses/${courseId}/lessons/${lesson.id}/edit`)}
                                                 color="primary"
                                             >
                                                 <Edit fontSize="small" />
+                                            </IconButton>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleDeleteLesson(lesson.id)}
+                                                color="error"
+                                                sx={{ mr: 1 }}
+                                            >
+                                                <Delete fontSize="small" />
                                             </IconButton>
                                         </TableCell>
                                     </TableRow>

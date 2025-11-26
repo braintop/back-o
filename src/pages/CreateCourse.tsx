@@ -24,7 +24,8 @@ export default function CreateCourse() {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        imageUrl: ''
+        imageUrl: '',
+        syllabusLink: ''
     });
     
     // רשימת תמונות מתיקיית public
@@ -70,6 +71,7 @@ export default function CreateCourse() {
                 name: formData.name,
                 description: formData.description,
                 imageUrl: formData.imageUrl || undefined,
+                syllabusLink: formData.syllabusLink.trim() || undefined,
                 createdBy: auth.currentUser.uid
             });
             navigate(`/courses/${courseId}`);
@@ -111,6 +113,16 @@ export default function CreateCourse() {
                             margin="normal"
                             multiline
                             rows={4}
+                        />
+                        <TextField
+                            fullWidth
+                            label="לינק לסילבוס"
+                            name="syllabusLink"
+                            value={formData.syllabusLink}
+                            onChange={handleChange}
+                            margin="normal"
+                            placeholder="https://..."
+                            type="url"
                         />
                         <FormControl fullWidth margin="normal">
                             <InputLabel>תמונת הקורס</InputLabel>

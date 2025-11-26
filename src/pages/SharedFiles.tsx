@@ -24,9 +24,10 @@ import {
     FormControl,
     InputLabel,
     Tabs,
-    Tab
+    Tab,
+    Autocomplete
 } from '@mui/material';
-import { Add, Edit, Delete, Link as LinkIcon } from '@mui/icons-material';
+import { Add, Edit, Delete, Link as LinkIcon, Search } from '@mui/icons-material';
 import { 
     getSharedFiles, 
     createSharedFile, 
@@ -35,6 +36,7 @@ import {
     type SharedFile 
 } from '../firebase/sharedFilesApi';
 import { auth } from '../firebase/firebase';
+import { getUsers, type User } from '../firebase/usersApi';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -61,10 +63,12 @@ export default function SharedFiles() {
     const [tabValue, setTabValue] = useState(0);
     const [files, setFiles] = useState<SharedFile[]>([]);
     const [filteredFiles, setFilteredFiles] = useState<SharedFile[]>([]);
+    const [searchQuery, setSearchQuery] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingFile, setEditingFile] = useState<SharedFile | null>(null);
+    const [users, setUsers] = useState<User[]>([]);
     const [formData, setFormData] = useState({
         name: '',
         type: 'presentation' as 'presentation' | 'worksheet' | 'solutions',
@@ -74,11 +78,12 @@ export default function SharedFiles() {
 
     useEffect(() => {
         loadFiles();
+        loadUsers();
     }, []);
 
     useEffect(() => {
         filterFiles();
-    }, [files, tabValue]);
+    }, [files, tabValue, searchQuery]);
 
     const loadFiles = async () => {
         try {
@@ -93,10 +98,46 @@ export default function SharedFiles() {
         }
     };
 
+    const loadUsers = async () => {
+        try {
+            const usersList = await getUsers();
+            setUsers(usersList);
+        } catch (err: any) {
+            console.error('Error loading users:', err);
+        }
+    };
+
     const filterFiles = () => {
         const types = ['presentation', 'worksheet', 'solutions'];
         const type = types[tabValue];
-        setFilteredFiles(files.filter(f => f.type === type));
+        let filtered = files.filter(f => f.type === type);
+        
+        // חיפוש לפי שם ותיאור
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter(file => {
+                const nameMatch = file.name.toLowerCase().includes(query);
+                const descriptionMatch = file.description?.toLowerCase().includes(query) || false;
+                return nameMatch || descriptionMatch;
+            });
+        }
+        
+        setFilteredFiles(filtered);
+    };
+
+    // יצירת רשימת אפשרויות ל-autocomplete (שם ותיאור)
+    const getAutocompleteOptions = (): string[] => {
+        const types = ['presentation', 'worksheet', 'solutions'];
+        const type = types[tabValue];
+        const typeFilteredFiles = files.filter(f => f.type === type);
+        
+        const options = new Set<string>();
+        typeFilteredFiles.forEach(file => {
+            if (file.name) options.add(file.name);
+            if (file.description) options.add(file.description);
+        });
+        
+        return Array.from(options);
     };
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -142,13 +183,18 @@ export default function SharedFiles() {
         }
 
         try {
+            // מצא את המשתמש הנוכחי כדי לקבל את השם
+            const currentUser = users.find(u => u.uid === auth.currentUser?.uid);
+            const currentUserName = currentUser?.name || auth.currentUser.displayName || 'משתמש לא ידוע';
+
             if (editingFile) {
                 await updateSharedFile(editingFile.id!, {
                     name: formData.name,
                     type: formData.type,
                     url: formData.url,
                     description: formData.description.trim() || undefined,
-                    createdBy: editingFile.createdBy
+                    createdBy: editingFile.createdBy,
+                    createdByName: editingFile.createdByName || currentUserName
                 });
             } else {
                 await createSharedFile({
@@ -156,7 +202,8 @@ export default function SharedFiles() {
                     type: formData.type,
                     url: formData.url,
                     description: formData.description.trim() || undefined,
-                    createdBy: auth.currentUser.uid
+                    createdBy: auth.currentUser.uid,
+                    createdByName: currentUserName
                 });
             }
             handleCloseDialog();
@@ -224,12 +271,49 @@ export default function SharedFiles() {
 
                 {types.map((_, index) => (
                     <TabPanel key={index} value={tabValue} index={index}>
+                        <Box sx={{ p: 2, pb: 0 }}>
+                            <Autocomplete
+                                freeSolo
+                                options={getAutocompleteOptions()}
+                                inputValue={searchQuery}
+                                onInputChange={(_event, newValue) => {
+                                    setSearchQuery(newValue || '');
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="חפש לפי שם או תיאור"
+                                        placeholder="הקלד לחיפוש..."
+                                        inputProps={{
+                                            ...params.inputProps,
+                                            dir: 'rtl',
+                                            style: { textAlign: 'right' }
+                                        }}
+                                        InputLabelProps={{
+                                            ...params.InputLabelProps,
+                                            style: { direction: 'rtl' }
+                                        }}
+                                        InputProps={{
+                                            ...params.InputProps,
+                                            startAdornment: (
+                                                <>
+                                                    <Search sx={{ ml: 1, color: 'text.secondary', mr: 1 }} />
+                                                    {params.InputProps.startAdornment}
+                                                </>
+                                            )
+                                        }}
+                                    />
+                                )}
+                                sx={{ mb: 2, direction: 'rtl' }}
+                            />
+                        </Box>
                         <TableContainer>
                             <Table>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>שם</TableCell>
                                         <TableCell>תיאור</TableCell>
+                                        <TableCell>נטען על ידי</TableCell>
                                         <TableCell>לינק</TableCell>
                                         <TableCell>פעולות</TableCell>
                                     </TableRow>
@@ -237,7 +321,7 @@ export default function SharedFiles() {
                                 <TableBody>
                                     {filteredFiles.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                                            <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                                                 <Typography variant="body2" color="text.secondary">
                                                     אין קבצים עדיין
                                                 </Typography>
@@ -248,6 +332,7 @@ export default function SharedFiles() {
                                             <TableRow key={file.id} hover>
                                                 <TableCell>{file.name}</TableCell>
                                                 <TableCell>{file.description || '-'}</TableCell>
+                                                <TableCell>{file.createdByName || '-'}</TableCell>
                                                 <TableCell>
                                                     <Button
                                                         size="small"
