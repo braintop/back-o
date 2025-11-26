@@ -80,11 +80,12 @@ export default function ChatBot() {
     }, []);
 
     const renderMessageText = (text: string) => {
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        // מזהה גם URLs מלאים וגם נתיבים יחסיים שמתחילים ב-/
+        const urlRegex = /(https?:\/\/[^\s]+|\/[^\s]+)/g;
         const parts = text.split(urlRegex);
 
         return parts.map((part, index) => {
-            if (/^https?:\/\/[^\s]+$/i.test(part)) {
+            if (/^(https?:\/\/[^\s]+|\/[^\s]+)$/i.test(part)) {
                 return (
                     <a
                         key={index}

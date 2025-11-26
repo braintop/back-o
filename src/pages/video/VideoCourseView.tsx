@@ -60,7 +60,7 @@ const getVimeoEmbed = (url: string): string | null => {
 };
 
 export default function VideoCourseView() {
-    const { courseId } = useParams<{ courseId: string }>();
+    const { courseId, lessonId } = useParams<{ courseId: string; lessonId?: string }>();
     const navigate = useNavigate();
     const [course, setCourse] = useState<VideoCourse | null>(null);
     const [chapters, setChapters] = useState<ChapterWithLessons[]>([]);
@@ -111,10 +111,22 @@ export default function VideoCourseView() {
 
             setChapters(chaptersWithLessons);
 
-            // בוחרים אוטומטית שיעור ראשון אם קיים
-            const firstChapter = chaptersWithLessons[0];
-            const firstLesson = firstChapter?.lessons[0] || null;
-            setSelectedLesson(firstLesson || null);
+            // בחירת שיעור לפי lessonId אם קיים, אחרת שיעור ראשון
+            let initialLesson: VideoLesson | null = null;
+            if (lessonId) {
+                for (const chapter of chaptersWithLessons) {
+                    const found = chapter.lessons.find((l) => l.id === lessonId);
+                    if (found) {
+                        initialLesson = found;
+                        break;
+                    }
+                }
+            }
+            if (!initialLesson) {
+                const firstChapter = chaptersWithLessons[0];
+                initialLesson = firstChapter?.lessons[0] || null;
+            }
+            setSelectedLesson(initialLesson);
         } catch (err: any) {
             setError(err.message || 'שגיאה בטעינת נתוני הקורס');
         } finally {

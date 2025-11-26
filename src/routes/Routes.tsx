@@ -87,6 +87,14 @@ export default function AppRoutes() {
         } 
       />
       <Route 
+        path="/video-courses/view/:courseId/:lessonId" 
+        element={
+          <ProtectedRoute>
+            <VideoCourseView />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/courses/new" 
         element={
           <ProtectedRoute>

@@ -2,16 +2,53 @@ import { getCourses } from '../firebase/coursesApi';
 import { getAllLessons } from '../firebase/lessonsApi';
 import { getUsers } from '../firebase/usersApi';
 import { getSharedFiles } from '../firebase/sharedFilesApi';
+import { getVideoCourses } from '../firebase/videoCoursesApi';
+import { getChaptersByCourseId } from '../firebase/videoChaptersApi';
+import { getVideoLessonsByChapterId } from '../firebase/videoLessonsApi';
 
 // פונקציה להכנת נתונים לשאילתה
 async function prepareDataForAI() {
     try {
-        const [courses, allLessons, users, sharedFiles] = await Promise.all([
+        const [courses, allLessons, users, sharedFiles, visibleVideoCourses] = await Promise.all([
             getCourses(),
             getAllLessons(),
             getUsers(),
-            getSharedFiles()
+            getSharedFiles(),
+            getVideoCourses(true)
         ]);
+
+        // בניית מערך שיעורי וידאו עם מידע על קורס ופרק + URL לצפייה
+        const videoLessons: Array<{
+            id?: string;
+            courseId: string;
+            courseName: string;
+            chapterId: string;
+            chapterTitle: string;
+            title: string;
+            description: string;
+            viewUrl: string;
+        }> = [];
+
+        for (const course of visibleVideoCourses) {
+            if (!course.id) continue;
+            const chapters = await getChaptersByCourseId(course.id);
+            for (const chapter of chapters) {
+                if (!chapter.id) continue;
+                const lessons = await getVideoLessonsByChapterId(chapter.id);
+                lessons.forEach((lesson) => {
+                    videoLessons.push({
+                        id: lesson.id,
+                        courseId: course.id!,
+                        courseName: course.name,
+                        chapterId: chapter.id!,
+                        chapterTitle: chapter.title,
+                        title: lesson.title,
+                        description: lesson.description || '',
+                        viewUrl: `/video-courses/view/${course.id}/${lesson.id}`
+                    });
+                });
+            }
+        }
 
         // הכנת נתונים בפורמט JSON
         const data = {
@@ -50,7 +87,15 @@ async function prepareDataForAI() {
                 description: file.description || '',
                 createdAt: file.createdAt.toISOString().split('T')[0],
                 createdByName: file.createdByName || ''
-            }))
+            })),
+            videoCourses: visibleVideoCourses.map(course => ({
+                id: course.id,
+                name: course.name,
+                description: course.description,
+                editorName: course.editorName,
+                viewUrl: `/video-courses/view/${course.id}`
+            })),
+            videoLessons
         };
 
         return JSON.stringify(data, null, 2);
@@ -81,14 +126,18 @@ ${data}
 
 הנחיות מענה:
 - ענה בעברית בצורה ברורה וקצרה.
-- אם השאלה מתייחסת לשיעור מסוים, השתמש ברשימת השיעורים (lessons).
-- אם המשתמש מבקש מצגת / PDF / וידאו / קובץ לשיעור, חפש תחילה בקבצים של אותו שיעור (lesson.files).
+- אם השאלה מתייחסת לשיעור מסוים, השתמש ברשימת השיעורים (lessons או videoLessons).
+- אם המשתמש מחפש קורס וידאו, השתמש ברשימת videoCourses והחזר גם שם הקורס וגם ה-URL מתוך השדה viewUrl.
+- אם המשתמש רוצה שיעור וידאו ספציפי, השתמש ברשימת videoLessons והחזר גם שם הקורס, שם הפרק, שם השיעור וה-URL מתוך viewUrl.
+- אם המשתמש מבקש מצגת / PDF / וידאו / קובץ לשיעור פרונטלי, חפש תחילה בקבצים של אותו שיעור (lesson.files).
 - אם לא נמצא שם, חפש ברשימת הקבצים המשותפים (sharedFiles).
 - החזר קישורים ישירים (URL) בפורמט קריא, למשל:
+  - "קורס וידאו: /video-courses/view/..."
+  - "שיעור וידאו: /video-courses/view/.../..."
   - "מצגת: https://..."
   - "דף עבודה: https://..."
   - "וידאו: https://..."
-- אם אין קובץ מתאים, כתוב במפורש שאין קובץ כזה במערכת.
+- אם אין קובץ מתאים או קורס/שיעור מתאים, כתוב במפורש שאין כזה במערכת.
 - אם אין נתונים רלוונטיים בכלל, אמור זאת בצורה מנומסת.
 
 תשובה:`;
