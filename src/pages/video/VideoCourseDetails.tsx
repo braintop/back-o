@@ -44,6 +44,8 @@ import {
     deleteVideoLesson,
     type VideoLesson
 } from '../../firebase/videoLessonsApi';
+import { auth } from '../../firebase/firebase';
+import { getUserByUid } from '../../firebase/usersApi';
 import RichTextEditor from '../../components/RichTextEditor';
 
 interface ChapterWithLessons extends VideoChapter {
@@ -57,6 +59,7 @@ export default function VideoCourseDetails() {
     const [chapters, setChapters] = useState<ChapterWithLessons[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
     const [chapterDialogOpen, setChapterDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<VideoChapter | null>(null);
@@ -74,9 +77,31 @@ export default function VideoCourseDetails() {
     });
 
     useEffect(() => {
-        if (courseId) {
-            loadData();
-        }
+        const checkAdminAndLoad = async () => {
+            if (!courseId) return;
+            if (!auth.currentUser) {
+                setIsAdmin(false);
+                navigate('/video-courses/view');
+                return;
+            }
+            try {
+                const current = await getUserByUid(auth.currentUser.uid);
+                if (current?.role === 'admin') {
+                    setIsAdmin(true);
+                    await loadData();
+                } else {
+                    setIsAdmin(false);
+                    navigate('/video-courses/view');
+                }
+            } catch (err) {
+                console.error('Error determining admin role for video course details:', err);
+                setIsAdmin(false);
+                navigate('/video-courses/view');
+            }
+        };
+
+        checkAdminAndLoad();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [courseId]);
 
     const loadData = async () => {
@@ -252,7 +277,7 @@ export default function VideoCourseDetails() {
         }
     };
 
-    if (loading) {
+    if (isAdmin === null || loading) {
         return (
             <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
@@ -260,6 +285,10 @@ export default function VideoCourseDetails() {
                 </Box>
             </Container>
         );
+    }
+
+    if (!isAdmin) {
+        return null;
     }
 
     if (error && !course) {
@@ -337,6 +366,7 @@ export default function VideoCourseDetails() {
                                         <Box>
                                             <IconButton
                                                 size="small"
+                                                component="span"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     openNewLessonDialog(chapter);
@@ -346,6 +376,7 @@ export default function VideoCourseDetails() {
                                             </IconButton>
                                             <IconButton
                                                 size="small"
+                                                component="span"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     openEditChapterDialog(chapter);
@@ -355,6 +386,7 @@ export default function VideoCourseDetails() {
                                             </IconButton>
                                             <IconButton
                                                 size="small"
+                                                component="span"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleDeleteChapter(chapter);

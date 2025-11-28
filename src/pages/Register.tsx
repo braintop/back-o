@@ -7,25 +7,32 @@ import {
     Typography, 
     Box,
     Alert,
-    CircularProgress
+    CircularProgress,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import { registerUser } from '../firebase/api';
 
 export default function Register() {
     const [formData, setFormData] = useState({
         firstName: '',
         email: '',
-        password: ''
+        password: '',
+        role: 'student' as 'user' | 'admin' | 'student' | 'teacher'
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement> | SelectChangeEvent) => {
+        const { name, value } = e.target as HTMLInputElement;
+        setFormData(prev => ({
+            ...prev,
+            [name as keyof typeof prev]: value as any
+        }));
         setError(null);
         setSuccess(false);
     };
@@ -40,7 +47,7 @@ export default function Register() {
             const user = await registerUser(formData);
             console.log('User registered successfully:', user);
             setSuccess(true);
-            setFormData({ firstName: '', email: '', password: '' });
+            setFormData({ firstName: '', email: '', password: '', role: 'student' });
         } catch (err: any) {
             console.error('Registration error:', err);
             setError(err.message || 'שגיאה ברישום המשתמש');
@@ -72,7 +79,7 @@ export default function Register() {
                             label="שם פרטי"
                             name="firstName"
                             value={formData.firstName}
-                            onChange={handleChange}
+                            onChange={handleChange as any}
                             margin="normal"
                             required
                             autoComplete="given-name"
@@ -83,7 +90,7 @@ export default function Register() {
                             name="email"
                             type="email"
                             value={formData.email}
-                            onChange={handleChange}
+                            onChange={handleChange as any}
                             margin="normal"
                             required
                             autoComplete="email"
@@ -94,11 +101,25 @@ export default function Register() {
                             name="password"
                             type="password"
                             value={formData.password}
-                            onChange={handleChange}
+                            onChange={handleChange as any}
                             margin="normal"
                             required
                             autoComplete="new-password"
                         />
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel>תפקיד</InputLabel>
+                            <Select
+                                name="role"
+                                value={formData.role}
+                                label="תפקיד"
+                                onChange={handleChange}
+                            >
+                                <MenuItem value="user">User</MenuItem>
+                                <MenuItem value="admin">Admin</MenuItem>
+                                <MenuItem value="student">Student</MenuItem>
+                                <MenuItem value="teacher">Teacher</MenuItem>
+                            </Select>
+                        </FormControl>
                         <Button
                             type="submit"
                             fullWidth

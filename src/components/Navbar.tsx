@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { AppBar, Toolbar, Button, Box } from '@mui/material';
+import { AppBar, Toolbar, Button, Box, Avatar, Menu, MenuItem, IconButton, Tooltip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase/firebase';
+import { getUserByUid } from '../firebase/usersApi';
 import { logoutUser } from '../firebase/api';
 import HomeIcon from '@mui/icons-material/Home';
 import LoginIcon from '@mui/icons-material/Login';
-import LogoutIcon from '@mui/icons-material/Logout';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import SchoolIcon from '@mui/icons-material/School';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -16,10 +16,22 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 export default function Navbar() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsAuthenticated(!!user);
+      setUserEmail(user?.email || null);
+      if (user?.uid) {
+        // טען את התפקיד של המשתמש מפיירסטור כדי לדעת אם הוא אדמין
+        getUserByUid(user.uid)
+          .then((u) => setIsAdmin(u?.role === 'admin'))
+          .catch(() => setIsAdmin(false));
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => unsubscribe();
@@ -41,6 +53,21 @@ export default function Navbar() {
       navigate(path);
     }
   };
+
+  const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElUser(event.currentTarget);
+  };
+
+  const handleCloseUserMenu = () => {
+    setAnchorElUser(null);
+  };
+
+  const handleProfile = () => {
+    handleCloseUserMenu();
+    navigate('/profile');
+  };
+
+  const avatarLetter = userEmail ? userEmail.charAt(0).toUpperCase() : '?';
 
   return (
     <AppBar position="static" dir="rtl">
@@ -73,10 +100,11 @@ export default function Navbar() {
             קורסים
           </Button>
           <Button 
-            color="inherit" 
+            color="inherit"
             onClick={() => handleNavigation('/video-courses')}
             startIcon={<AddCircleOutlineIcon />}
             sx={{ gap: 1 }}
+            style={{ display: isAdmin ? 'inline-flex' : 'none' }}
           >
             קורסי וידאו +
           </Button>
@@ -97,14 +125,48 @@ export default function Navbar() {
             קבצי שיעור
           </Button>
         </Box>
-        <Button 
-          color="inherit" 
-          onClick={isAuthenticated ? handleLogout : () => navigate('/login')}
-          startIcon={isAuthenticated ? <LogoutIcon /> : <LoginIcon />}
-          sx={{ gap: 1 }}
-        >
-          {isAuthenticated ? 'התנתק' : 'התחבר'}
-        </Button>
+        {isAuthenticated ? (
+          <Box sx={{ flexGrow: 0 }}>
+            <Tooltip title="פרופיל">
+              <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                <Avatar sx={{ bgcolor: 'secondary.main' }}>
+                  {avatarLetter}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
+            <Menu
+              sx={{ mt: '45px' }}
+              anchorEl={anchorElUser}
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              open={Boolean(anchorElUser)}
+              onClose={handleCloseUserMenu}
+            >
+              <MenuItem onClick={handleProfile}>
+                פרופיל
+              </MenuItem>
+              <MenuItem onClick={handleLogout}>
+                התנתק
+              </MenuItem>
+            </Menu>
+          </Box>
+        ) : (
+          <Button 
+            color="inherit" 
+            onClick={() => navigate('/login')}
+            startIcon={<LoginIcon />}
+            sx={{ gap: 1 }}
+          >
+            התחבר
+          </Button>
+        )}
       </Toolbar>
     </AppBar>
   );

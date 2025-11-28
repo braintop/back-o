@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent, Extension, Node } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Color from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -24,6 +26,7 @@ import {
     Undo,
     Redo
 } from '@mui/icons-material';
+import CodeIcon from '@mui/icons-material/Code';
 import FormatTextdirectionLToR from '@mui/icons-material/FormatTextdirectionLToR';
 import FormatTextdirectionRToL from '@mui/icons-material/FormatTextdirectionRToL';
 import VideoLibrary from '@mui/icons-material/VideoLibrary';
@@ -34,14 +37,21 @@ interface RichTextEditorProps {
     placeholder?: string;
 }
 
+interface ReadOnlyRichTextProps {
+    value: string;
+    placeholder?: string;
+}
+
 // Extension מותאם אישית ל-dir attribute על פסקאות
 const TextDirection = Extension.create({
-    name: 'textDirection',
+    // שם ייחודי כדי שלא יתנגש עם הרחבות אחרות
+    name: 'customTextDirection',
     
     addGlobalAttributes() {
         return [
             {
-                types: ['paragraph', 'heading'],
+                // נאפשר כיוון טקסט גם ל-codeBlock כדי שטקסט קוד יוכל להיות LTR
+                types: ['paragraph', 'heading', 'codeBlock'],
                 attributes: {
                     dir: {
                         default: null,
@@ -99,6 +109,39 @@ const TextDirection = Extension.create({
         };
     },
 });
+
+// פונקציה שיוצרת את רשימת ההרחבות המשותפת גם לעורך וגם לתצוגה בלבד
+const buildExtensions = (lowlightInstance: any) => [
+    StarterKit.configure({
+        codeBlock: false,
+        // נבטל את Link ו-Underline המובנים כדי שנשתמש בגרסאות המורחבות שלנו
+        link: false,
+        underline: false,
+        heading: {
+            levels: [1, 2, 3],
+        },
+    }),
+    CodeBlockLowlight.configure({
+        lowlight: lowlightInstance,
+    }),
+    TextAlign.configure({
+        types: ['heading', 'paragraph'],
+    }),
+    Color,
+    TextStyle,
+    Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+            class: 'link',
+        },
+    }),
+    Underline,
+    Highlight.configure({
+        multicolor: true,
+    }),
+    TextDirection,
+    VideoEmbed,
+];
 
 // פונקציה להמרת URL ל-embed URL (YouTube או Vimeo)
 const getEmbedUrl = (input: string, type: 'youtube' | 'vimeo'): string | null => {
@@ -282,6 +325,7 @@ const VideoEmbed = Node.create({
 });
 
 export default function RichTextEditor({ value, onChange, placeholder = 'הזן תיאור...' }: RichTextEditorProps) {
+    const lowlightInstance = createLowlight(common);
     const textColorInputRef = useRef<HTMLInputElement>(null);
     const backgroundColorInputRef = useRef<HTMLInputElement>(null);
     const [textColor, setTextColor] = useState('#000000');
@@ -292,30 +336,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'הזן 
     const [videoType, setVideoType] = useState<'youtube' | 'vimeo'>('youtube');
     
     const editor = useEditor({
-        extensions: [
-            StarterKit.configure({
-                heading: {
-                    levels: [1, 2, 3],
-                },
-            }),
-            TextAlign.configure({
-                types: ['heading', 'paragraph'],
-            }),
-            Color,
-            TextStyle,
-            Link.configure({
-                openOnClick: false,
-                HTMLAttributes: {
-                    class: 'link',
-                },
-            }),
-            Underline,
-            Highlight.configure({
-                multicolor: true,
-            }),
-            TextDirection,
-            VideoEmbed,
-        ],
+        extensions: buildExtensions(lowlightInstance),
         immediatelyRender: false,
         content: value,
         onUpdate: ({ editor }) => {
@@ -423,6 +444,24 @@ export default function RichTextEditor({ value, onChange, placeholder = 'הזן 
                         color={editor.isActive('strike') ? 'primary' : 'default'}
                     >
                         <FormatStrikethrough fontSize="small" />
+                    </IconButton>
+                </ButtonGroup>
+
+                <ButtonGroup size="small" variant="outlined">
+                    <IconButton
+                        size="small"
+                        onClick={() => {
+                            // בלוק קוד מיוחד להדבקת קוד – תמיד שמאל ולמעלה (LTR)
+                            editor.chain().focus().toggleCodeBlock().run();
+                            const node = editor.state.selection.$from.parent;
+                            if (node.type.name === 'codeBlock') {
+                                editor.chain().focus().setTextDirection('ltr').run();
+                            }
+                        }}
+                        color={editor.isActive('codeBlock') ? 'primary' : 'default'}
+                        title="בלוק קוד (להדבקת קוד מ‑VS Code)"
+                    >
+                        <CodeIcon fontSize="small" />
                     </IconButton>
                 </ButtonGroup>
 
@@ -658,13 +697,23 @@ export default function RichTextEditor({ value, onChange, placeholder = 'הזן 
                         padding: 2,
                         direction: 'rtl',
                         textAlign: 'right',
-                        '& p[dir="ltr"], & h1[dir="ltr"], & h2[dir="ltr"], & h3[dir="ltr"]': {
+                        '& p[dir="ltr"], & h1[dir="ltr"], & h2[dir="ltr"], & h3[dir="ltr"], & pre[dir="ltr"]': {
                             direction: 'ltr',
                             textAlign: 'left',
                         },
-                        '& p[dir="rtl"], & h1[dir="rtl"], & h2[dir="rtl"], & h3[dir="rtl"]': {
+                        '& p[dir="rtl"], & h1[dir="rtl"], & h2[dir="rtl"], & h3[dir="rtl"], & pre[dir="rtl"]': {
                             direction: 'rtl',
                             textAlign: 'right',
+                        },
+                        '& pre': {
+                            direction: 'ltr',
+                            textAlign: 'left',
+                            fontFamily: '"Fira Code", "Source Code Pro", Menlo, Monaco, Consolas, "Courier New", monospace',
+                            backgroundColor: '#f5f5f5',
+                            borderRadius: 4,
+                            padding: '8px 12px',
+                            overflowX: 'auto',
+                            fontSize: '0.9rem',
                         },
                     },
                 }}
@@ -738,6 +787,43 @@ export default function RichTextEditor({ value, onChange, placeholder = 'הזן 
                     </Button>
                 </DialogActions>
             </Dialog>
+        </Box>
+    );
+}
+
+// רכיב לקריאה בלבד – מציג תוכן RichText עם אותו פורמט כמו בעורך, בלי אפשרות עריכה
+export function ReadOnlyRichText({ value, placeholder = 'תיאור...' }: ReadOnlyRichTextProps) {
+    const lowlightInstance = createLowlight(common);
+
+    const editor = useEditor({
+        extensions: buildExtensions(lowlightInstance),
+        content: value,
+        editable: false,
+        editorProps: {
+            attributes: {
+                class: 'ProseMirror',
+                dir: 'rtl',
+                'data-placeholder': placeholder,
+            },
+        },
+    });
+
+    // לעדכן את התוכן כשמשתנה value (למשל כשבוחרים שיעור אחר לצפייה)
+    useEffect(() => {
+        if (editor && value !== editor.getHTML()) {
+            editor.commands.setContent(value || '');
+        }
+    }, [editor, value]);
+
+    if (!editor) {
+        return null;
+    }
+
+    return (
+        <Box sx={{ borderRadius: 1, overflow: 'hidden', minHeight: '150px' }}>
+            <Box sx={{ '& .ProseMirror': { minHeight: '150px' } }}>
+                <EditorContent editor={editor} />
+            </Box>
         </Box>
     );
 }

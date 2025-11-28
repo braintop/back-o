@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Container,
@@ -14,10 +14,17 @@ import {
     FormControl,
     InputLabel,
     Select,
-    MenuItem
+    MenuItem,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Autocomplete,
+    Chip
 } from '@mui/material';
 import { createCourse } from '../firebase/coursesApi';
 import { auth } from '../firebase/firebase';
+import { getUsers, getUserByUid, type User } from '../firebase/usersApi';
 
 export default function CreateCourse() {
     const navigate = useNavigate();
@@ -38,6 +45,39 @@ export default function CreateCourse() {
     ];
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [users, setUsers] = useState<User[]>([]);
+    const [selectedEditors, setSelectedEditors] = useState<User[]>([]);
+    const [editorsDialogOpen, setEditorsDialogOpen] = useState(false);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+        const init = async () => {
+            if (!auth.currentUser) return;
+            try {
+                const current = await getUserByUid(auth.currentUser.uid);
+                if (current?.role === 'admin') {
+                    setIsAdmin(true);
+                    await loadUsers();
+                }
+            } catch (err) {
+                console.error('Error determining admin role:', err);
+            }
+        };
+        init();
+    }, []);
+
+    const loadUsers = async () => {
+        try {
+            setLoadingUsers(true);
+            const list = await getUsers();
+            setUsers(list);
+        } catch (err) {
+            console.error('Error loading users for course editors:', err);
+        } finally {
+            setLoadingUsers(false);
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -72,7 +112,8 @@ export default function CreateCourse() {
                 description: formData.description,
                 imageUrl: formData.imageUrl || undefined,
                 syllabusLink: formData.syllabusLink.trim() || undefined,
-                createdBy: auth.currentUser.uid
+                createdBy: auth.currentUser.uid,
+                editors: selectedEditors.map((u) => u.uid)
             });
             navigate(`/courses/${courseId}`);
         } catch (err: any) {
@@ -153,6 +194,29 @@ export default function CreateCourse() {
                                 </Card>
                             </Box>
                         )}
+                        {isAdmin && (
+                            <Box sx={{ mt: 2, mb: 1 }}>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => setEditorsDialogOpen(true)}
+                                >
+                                    נהל עורכי קורס (CRUD)
+                                </Button>
+                                {selectedEditors.length > 0 && (
+                                    <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                        {selectedEditors.map((u) => (
+                                            <Chip
+                                                key={u.uid}
+                                                label={`${u.name} (${u.email})`}
+                                                size="small"
+                                            />
+                                        ))}
+                                    </Box>
+                                )}
+                            </Box>
+                        )}
+
                         <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
                             <Button
                                 type="button"
@@ -175,6 +239,38 @@ export default function CreateCourse() {
                     </form>
                 </Paper>
             </Box>
+
+            {isAdmin && (
+                <Dialog
+                    open={editorsDialogOpen}
+                    onClose={() => setEditorsDialogOpen(false)}
+                    fullWidth
+                    maxWidth="sm"
+                    dir="rtl"
+                >
+                    <DialogTitle>בחר משתמשים עם הרשאת CRUD על הקורס</DialogTitle>
+                    <DialogContent>
+                        <Autocomplete
+                            multiple
+                            options={users}
+                            getOptionLabel={(option) => `${option.name} (${option.email})`}
+                            value={selectedEditors}
+                            onChange={(_, value) => setSelectedEditors(value)}
+                            loading={loadingUsers}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="משתמשים"
+                                    placeholder="התחל להקליד שם או אימייל..."
+                                />
+                            )}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setEditorsDialogOpen(false)}>סגור</Button>
+                    </DialogActions>
+                </Dialog>
+            )}
         </Container>
     );
 }

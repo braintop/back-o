@@ -14,15 +14,41 @@ import {
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { getVideoCourses, type VideoCourse } from '../../firebase/videoCoursesApi';
+import { auth } from '../../firebase/firebase';
+import { getUserByUid } from '../../firebase/usersApi';
 
 export default function VideoCourses() {
     const navigate = useNavigate();
     const [courses, setCourses] = useState<VideoCourse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
     useEffect(() => {
-        loadCourses();
+        const checkAdminAndLoad = async () => {
+            if (!auth.currentUser) {
+                setIsAdmin(false);
+                navigate('/video-courses/view');
+                return;
+            }
+            try {
+                const current = await getUserByUid(auth.currentUser.uid);
+                if (current?.role === 'admin') {
+                    setIsAdmin(true);
+                    await loadCourses();
+                } else {
+                    setIsAdmin(false);
+                    navigate('/video-courses/view');
+                }
+            } catch (err) {
+                console.error('Error determining admin role for video courses:', err);
+                setIsAdmin(false);
+                navigate('/video-courses/view');
+            }
+        };
+
+        checkAdminAndLoad();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadCourses = async () => {
@@ -38,7 +64,7 @@ export default function VideoCourses() {
         }
     };
 
-    if (loading) {
+    if (isAdmin === null || loading) {
         return (
             <Container maxWidth="lg" dir="rtl" sx={{ mt: 4, mb: 4 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>

@@ -21,7 +21,8 @@ import {
 import { Add, ArrowBack, Edit, FileDownload, Link as LinkIcon, Delete, UploadFile } from '@mui/icons-material';
 import { getCourseById, type Course } from '../firebase/coursesApi';
 import { getLessonsByCourseId, deleteLesson, createLesson, type Lesson } from '../firebase/lessonsApi';
-import { getUsers, type User } from '../firebase/usersApi';
+import { getUsers, getUserByUid, type User } from '../firebase/usersApi';
+import { auth } from '../firebase/firebase';
 import * as XLSX from 'xlsx';
 
 export default function CourseDetails() {
@@ -36,6 +37,7 @@ export default function CourseDetails() {
     const [sortField, setSortField] = useState<'date' | 'title' | 'instructorName'>('date');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [canEdit, setCanEdit] = useState(false);
 
     useEffect(() => {
         if (courseId) {
@@ -58,8 +60,26 @@ export default function CourseDetails() {
             
             if (courseData) {
                 setCourse(courseData);
+
+                // חישוב האם למשתמש הנוכחי יש הרשאת עריכה על הקורס
+                if (auth.currentUser) {
+                    try {
+                        const currentUser = await getUserByUid(auth.currentUser.uid);
+                        const isAdmin = currentUser?.role === 'admin';
+                        const uid = auth.currentUser.uid;
+                        const isOwner = courseData.createdBy === uid;
+                        const isEditor = Array.isArray(courseData.editors) && courseData.editors.includes(uid);
+                        setCanEdit(Boolean(isAdmin || isOwner || isEditor));
+                    } catch (permErr) {
+                        console.error('Error checking course permissions:', permErr);
+                        setCanEdit(false);
+                    }
+                } else {
+                    setCanEdit(false);
+                }
             } else {
                 setError('קורס לא נמצא');
+                setCanEdit(false);
             }
             
             setLessons(lessonsData);
@@ -376,36 +396,40 @@ export default function CourseDetails() {
                                     </Button>
                                 )}
                             </Box>
-                            <Button
-                                variant="contained"
-                                startIcon={<Add />}
-                                onClick={() => navigate(`/courses/${courseId}/lessons/new`)}
-                            >
-                                הוסף שיעור
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                startIcon={<Edit />}
-                                onClick={() => navigate(`/courses/${courseId}/edit`)}
-                            >
-                                ערוך קורס
-                            </Button>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".csv"
-                                style={{ display: 'none' }}
-                                onChange={handleCsvFileChange}
-                            />
-                            <Button
-                                variant="outlined"
-                                color="secondary"
-                                startIcon={<UploadFile />}
-                                onClick={handleUploadButtonClick}
-                                disabled={uploading}
-                            >
-                                טען שיעורים
-                            </Button>
+                            {canEdit && (
+                                <>
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<Add />}
+                                        onClick={() => navigate(`/courses/${courseId}/lessons/new`)}
+                                    >
+                                        הוסף שיעור
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<Edit />}
+                                        onClick={() => navigate(`/courses/${courseId}/edit`)}
+                                    >
+                                        ערוך קורס
+                                    </Button>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept=".csv"
+                                        style={{ display: 'none' }}
+                                        onChange={handleCsvFileChange}
+                                    />
+                                    <Button
+                                        variant="outlined"
+                                        color="secondary"
+                                        startIcon={<UploadFile />}
+                                        onClick={handleUploadButtonClick}
+                                        disabled={uploading}
+                                    >
+                                        טען שיעורים
+                                    </Button>
+                                </>
+                            )}
                             {lessons.length > 0 && (
                                 <Button
                                     variant="outlined"
@@ -470,14 +494,16 @@ export default function CourseDetails() {
                                         <Typography variant="body2" color="text.secondary">
                                             אין שיעורים עדיין
                                         </Typography>
-                                        <Button
-                                            variant="outlined"
-                                            startIcon={<Add />}
-                                            onClick={() => navigate(`/courses/${courseId}/lessons/new`)}
-                                            sx={{ mt: 2 }}
-                                        >
-                                            הוסף שיעור ראשון
-                                        </Button>
+                                        {canEdit && (
+                                            <Button
+                                                variant="outlined"
+                                                startIcon={<Add />}
+                                                onClick={() => navigate(`/courses/${courseId}/lessons/new`)}
+                                                sx={{ mt: 2 }}
+                                            >
+                                                הוסף שיעור ראשון
+                                            </Button>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -498,21 +524,25 @@ export default function CourseDetails() {
                                             </Typography>
                                         </TableCell>
                                         <TableCell align="right">
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => navigate(`/courses/${courseId}/lessons/${lesson.id}/edit`)}
-                                                color="primary"
-                                            >
-                                                <Edit fontSize="small" />
-                                            </IconButton>
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => handleDeleteLesson(lesson.id)}
-                                                color="error"
-                                                sx={{ mr: 1 }}
-                                            >
-                                                <Delete fontSize="small" />
-                                            </IconButton>
+                                            {canEdit && (
+                                                <>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => navigate(`/courses/${courseId}/lessons/${lesson.id}/edit`)}
+                                                        color="primary"
+                                                    >
+                                                        <Edit fontSize="small" />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => handleDeleteLesson(lesson.id)}
+                                                        color="error"
+                                                        sx={{ mr: 1 }}
+                                                    >
+                                                        <Delete fontSize="small" />
+                                                    </IconButton>
+                                                </>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ))

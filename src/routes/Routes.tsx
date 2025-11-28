@@ -16,6 +16,7 @@ import CreateLesson from '../pages/CreateLesson';
 import EditLesson from '../pages/EditLesson';
 import SharedFiles from '../pages/SharedFiles';
 import ProtectedRoute from '../components/ProtectedRoute';
+import Profile from '../pages/Profile';
 
 export default function AppRoutes() {
   return (
@@ -139,6 +140,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <SharedFiles />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <Profile />
           </ProtectedRoute>
         } 
       />

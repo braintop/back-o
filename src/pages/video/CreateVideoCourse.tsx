@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Container,
@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import { createVideoCourse } from '../../firebase/videoCoursesApi';
 import { auth } from '../../firebase/firebase';
+import { getUserByUid } from '../../firebase/usersApi';
 
 export default function CreateVideoCourse() {
     const navigate = useNavigate();
@@ -34,6 +35,7 @@ export default function CreateVideoCourse() {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
     const availableImages = [
         { value: '/da1.png', label: 'da1.png' },
@@ -42,6 +44,32 @@ export default function CreateVideoCourse() {
         { value: '/full3.png', label: 'full3.png' },
         { value: '/full4.png', label: 'full4.png' }
     ];
+
+    useEffect(() => {
+        const checkAdmin = async () => {
+            if (!auth.currentUser) {
+                setIsAdmin(false);
+                navigate('/video-courses/view');
+                return;
+            }
+            try {
+                const current = await getUserByUid(auth.currentUser.uid);
+                if (current?.role === 'admin') {
+                    setIsAdmin(true);
+                } else {
+                    setIsAdmin(false);
+                    navigate('/video-courses/view');
+                }
+            } catch (err) {
+                console.error('Error determining admin role for create video course:', err);
+                setIsAdmin(false);
+                navigate('/video-courses/view');
+            }
+        };
+
+        checkAdmin();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -77,6 +105,11 @@ export default function CreateVideoCourse() {
             return;
         }
 
+        if (!isAdmin) {
+            setError('אין לך הרשאה ליצור קורס וידאו');
+            return;
+        }
+
         setLoading(true);
         setError(null);
 
@@ -99,6 +132,20 @@ export default function CreateVideoCourse() {
             setLoading(false);
         }
     };
+
+    if (isAdmin === null) {
+        return (
+            <Container maxWidth="sm" dir="rtl">
+                <Box sx={{ mt: 8, mb: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+                    <CircularProgress />
+                </Box>
+            </Container>
+        );
+    }
+
+    if (!isAdmin) {
+        return null;
+    }
 
     return (
         <Container maxWidth="sm" dir="rtl">

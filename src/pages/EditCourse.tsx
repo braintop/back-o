@@ -15,11 +15,18 @@ import {
     MenuItem,
     Card,
     CardMedia,
-    IconButton
+    IconButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Autocomplete,
+    Chip
 } from '@mui/material';
 import { Delete } from '@mui/icons-material';
-import { getCourseById, updateCourse } from '../firebase/coursesApi';
+import { getCourseById, updateCourse, type Course } from '../firebase/coursesApi';
 import { auth } from '../firebase/firebase';
+import { getUsers, getUserByUid, type User } from '../firebase/usersApi';
 
 export default function EditCourse() {
     const { courseId } = useParams<{ courseId: string }>();
@@ -33,6 +40,12 @@ export default function EditCourse() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [users, setUsers] = useState<User[]>([]);
+    const [selectedEditors, setSelectedEditors] = useState<User[]>([]);
+    const [editorsDialogOpen, setEditorsDialogOpen] = useState(false);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [courseEditors, setCourseEditors] = useState<string[] | undefined>(undefined);
 
     // רשימת תמונות מתיקיית public
     const availableImages = [
@@ -45,9 +58,43 @@ export default function EditCourse() {
 
     useEffect(() => {
         if (courseId) {
-            loadCourse();
+            initialize();
         }
     }, [courseId]);
+
+    const initialize = async () => {
+        try {
+            let isCurrentAdmin = false;
+            if (auth.currentUser) {
+                const current = await getUserByUid(auth.currentUser.uid);
+                if (current?.role === 'admin') {
+                    isCurrentAdmin = true;
+                    setIsAdmin(true);
+                }
+            }
+
+            if (isCurrentAdmin) {
+                await Promise.all([loadUsers(), loadCourse()]);
+            } else {
+                await loadCourse();
+            }
+        } catch (err) {
+            console.error('Error initializing EditCourse:', err);
+            await loadCourse();
+        }
+    };
+
+    const loadUsers = async () => {
+        try {
+            setLoadingUsers(true);
+            const list = await getUsers();
+            setUsers(list);
+        } catch (err) {
+            console.error('Error loading users for course editors:', err);
+        } finally {
+            setLoadingUsers(false);
+        }
+    };
 
     const loadCourse = async () => {
         if (!courseId) return;
@@ -64,6 +111,9 @@ export default function EditCourse() {
                     imageUrl: course.imageUrl || '',
                     syllabusLink: course.syllabusLink || ''
                 });
+
+                // נשמור את רשימת ה-editors מהקורס כדי שנוכל להצליב עם המשתמשים כשייטענו
+                setCourseEditors((course as Course).editors || []);
             } else {
                 setError('קורס לא נמצא');
             }
@@ -73,6 +123,19 @@ export default function EditCourse() {
             setLoading(false);
         }
     };
+
+    // ברגע שיש לנו גם משתמשים וגם editors מהקורס – נבנה את רשימת העורכים להצגה מתחת לכפתור
+    useEffect(() => {
+        if (!isAdmin) return;
+        if (!courseEditors || courseEditors.length === 0) {
+            setSelectedEditors([]);
+            return;
+        }
+        if (users.length === 0) return;
+
+        const editorsUsers = users.filter((u) => courseEditors.includes(u.uid));
+        setSelectedEditors(editorsUsers);
+    }, [isAdmin, users, courseEditors]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -111,7 +174,8 @@ export default function EditCourse() {
                 name: formData.name,
                 description: formData.description,
                 imageUrl: formData.imageUrl || undefined,
-                syllabusLink: formData.syllabusLink.trim() || undefined
+                syllabusLink: formData.syllabusLink.trim() || undefined,
+                editors: isAdmin ? selectedEditors.map(u => u.uid) : undefined
             });
             navigate(`/courses/${courseId}`);
         } catch (err: any) {
@@ -209,6 +273,29 @@ export default function EditCourse() {
                                 </IconButton>
                             </Box>
                         )}
+                        {isAdmin && (
+                            <Box sx={{ mt: 2, mb: 1 }}>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => setEditorsDialogOpen(true)}
+                                    disabled={loadingUsers}
+                                >
+                                    נהל עורכי קורס (CRUD)
+                                </Button>
+                                {selectedEditors.length > 0 && (
+                                    <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                        {selectedEditors.map((u) => (
+                                            <Chip
+                                                key={u.uid}
+                                                label={`${u.name} (${u.email})`}
+                                                size="small"
+                                            />
+                                        ))}
+                                    </Box>
+                                )}
+                            </Box>
+                        )}
                         <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
                             <Button
                                 type="button"
@@ -231,6 +318,37 @@ export default function EditCourse() {
                     </form>
                 </Paper>
             </Box>
+            {isAdmin && (
+                <Dialog
+                    open={editorsDialogOpen}
+                    onClose={() => setEditorsDialogOpen(false)}
+                    fullWidth
+                    maxWidth="sm"
+                    dir="rtl"
+                >
+                    <DialogTitle>בחר משתמשים עם הרשאת CRUD על הקורס</DialogTitle>
+                    <DialogContent>
+                        <Autocomplete
+                            multiple
+                            options={users}
+                            getOptionLabel={(option) => `${option.name} (${option.email})`}
+                            value={selectedEditors}
+                            onChange={(_, value) => setSelectedEditors(value)}
+                            loading={loadingUsers}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="משתמשים"
+                                    placeholder="התחל להקליד שם או אימייל..."
+                                />
+                            )}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setEditorsDialogOpen(false)}>סגור</Button>
+                    </DialogActions>
+                </Dialog>
+            )}
         </Container>
     );
 }

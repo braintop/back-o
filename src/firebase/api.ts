@@ -12,6 +12,7 @@ export interface RegisterData {
     firstName: string;
     email: string;
     password: string;
+    role: 'user' | 'admin' | 'student' | 'teacher';
 }
 
 export interface LoginData {
@@ -46,6 +47,7 @@ export const registerUser = async (data: RegisterData): Promise<User> => {
             uid: user.uid,
             name: data.firstName,
             email: data.email,
+            role: data.role || 'user',
             createdAt: Timestamp.now()
         });
 

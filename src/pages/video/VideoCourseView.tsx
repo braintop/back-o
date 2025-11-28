@@ -11,10 +11,15 @@ import {
     ListItemButton,
     ListItemText,
     Divider,
-    Paper
+    Paper,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails
 } from '@mui/material';
 import ArrowBack from '@mui/icons-material/ArrowBack';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { ReadOnlyRichText } from '../../components/RichTextEditor';
 import {
     getVideoCourseById,
     type VideoCourse
@@ -67,6 +72,7 @@ export default function VideoCourseView() {
     const [selectedLesson, setSelectedLesson] = useState<VideoLesson | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [expandedChapterId, setExpandedChapterId] = useState<string | null>(null);
 
     useEffect(() => {
         if (courseId) {
@@ -127,6 +133,10 @@ export default function VideoCourseView() {
                 initialLesson = firstChapter?.lessons[0] || null;
             }
             setSelectedLesson(initialLesson);
+
+            // אקורדיון: ברירת מחדל לפתוח את הפרק הראשון בלבד
+            const firstChapter = chaptersWithLessons[0];
+            setExpandedChapterId(firstChapter?.id ?? null);
         } catch (err: any) {
             setError(err.message || 'שגיאה בטעינת נתוני הקורס');
         } finally {
@@ -210,7 +220,7 @@ export default function VideoCourseView() {
             <Box
                 sx={{
                     display: 'flex',
-                    flexDirection: { xs: 'column', md: 'row-reverse' },
+                    flexDirection: { xs: 'column', md: 'row' },
                     gap: 3,
                     alignItems: 'flex-start'
                 }}
@@ -234,25 +244,44 @@ export default function VideoCourseView() {
                             <List sx={{ width: '100%' }}>
                                 {chapters.map((chapter) => (
                                     <Box key={chapter.id} sx={{ mb: 1 }}>
-                                        <Typography
-                                            variant="subtitle2"
-                                            sx={{ fontWeight: 'bold', mt: 1, mb: 0.5 }}
+                                        <Accordion
+                                            disableGutters
+                                            elevation={0}
+                                            square
+                                            expanded={expandedChapterId === chapter.id}
+                                            onChange={() =>
+                                                setExpandedChapterId(
+                                                    expandedChapterId === chapter.id ? null : (chapter.id as string)
+                                                )
+                                            }
                                         >
-                                            {chapter.title}
-                                        </Typography>
-                                        {chapter.lessons.map((lesson) => (
-                                            <ListItemButton
-                                                key={lesson.id}
-                                                selected={selectedLesson?.id === lesson.id}
-                                                onClick={() => setSelectedLesson(lesson)}
-                                                sx={{ pl: 2 }}
+                                            <AccordionSummary
+                                                expandIcon={<ExpandMoreIcon />}
+                                                sx={{ flexDirection: 'row-reverse' }}
                                             >
-                                                <ListItemText
-                                                    primary={lesson.title}
-                                                    primaryTypographyProps={{ sx: { textAlign: 'right' } }}
-                                                />
-                                            </ListItemButton>
-                                        ))}
+                                                <Typography
+                                                    variant="subtitle2"
+                                                    sx={{ fontWeight: 'bold' }}
+                                                >
+                                                    {chapter.title}
+                                                </Typography>
+                                            </AccordionSummary>
+                                            <AccordionDetails sx={{ pr: 0, pl: 0 }}>
+                                                {chapter.lessons.map((lesson) => (
+                                                    <ListItemButton
+                                                        key={lesson.id}
+                                                        selected={selectedLesson?.id === lesson.id}
+                                                        onClick={() => setSelectedLesson(lesson)}
+                                                        sx={{ pr: 2 }}
+                                                    >
+                                                        <ListItemText
+                                                            primary={lesson.title}
+                                                            primaryTypographyProps={{ sx: { textAlign: 'right' } }}
+                                                        />
+                                                    </ListItemButton>
+                                                ))}
+                                            </AccordionDetails>
+                                        </Accordion>
                                         <Divider sx={{ my: 1 }} />
                                     </Box>
                                 ))}
@@ -289,17 +318,7 @@ export default function VideoCourseView() {
                                         <Typography variant="subtitle2" sx={{ mb: 1 }}>
                                             תיאור מפורט
                                         </Typography>
-                                        <Box
-                                            sx={{
-                                                '& h1, & h2, & h3, & p, & li': {
-                                                    direction: 'rtl',
-                                                    textAlign: 'right'
-                                                }
-                                            }}
-                                            dangerouslySetInnerHTML={{
-                                                __html: (selectedLesson as any).richText || ''
-                                            }}
-                                        />
+                                        <ReadOnlyRichText value={(selectedLesson as any).richText || ''} />
                                     </Box>
                                 )}
                             </>
