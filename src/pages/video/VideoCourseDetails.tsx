@@ -28,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import {
     getVideoCourseById,
+    updateVideoCourse,
     type VideoCourse
 } from '../../firebase/videoCoursesApi';
 import {
@@ -75,6 +76,10 @@ export default function VideoCourseDetails() {
         vimeoUrl: '',
         youtubeUrl: ''
     });
+    const [syllabusDialogOpen, setSyllabusDialogOpen] = useState(false);
+    const [syllabusLink, setSyllabusLink] = useState('');
+    const [coursePresentationDialogOpen, setCoursePresentationDialogOpen] = useState(false);
+    const [coursePresentationLink, setCoursePresentationLink] = useState('');
 
     useEffect(() => {
         const checkAdminAndLoad = async () => {
@@ -127,6 +132,8 @@ export default function VideoCourseDetails() {
             }
 
             setCourse(courseData);
+            setSyllabusLink(courseData.syllabusLink || '');
+            setCoursePresentationLink((courseData as any).coursePresentationLink || '');
 
             const chaptersWithLessons: ChapterWithLessons[] = [];
 
@@ -325,6 +332,26 @@ export default function VideoCourseDetails() {
                                 {course.description}
                             </Typography>
                         )}
+                        {course.syllabusLink && (
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                סילבוס הקורס:{' '}
+                                <a href={course.syllabusLink} target="_blank" rel="noopener noreferrer">
+                                    לצפייה בסילבוס לחץ כאן
+                                </a>
+                            </Typography>
+                        )}
+                        {(course as any).coursePresentationLink && (
+                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                מצגת הקורס:{' '}
+                                <a
+                                    href={(course as any).coursePresentationLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    לצפייה במצגת לחץ כאן
+                                </a>
+                            </Typography>
+                        )}
                     </Box>
                 )}
             </Box>
@@ -335,14 +362,29 @@ export default function VideoCourseDetails() {
                 </Alert>
             )}
 
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                <Button
-                    variant="contained"
-                    startIcon={<Add />}
-                    onClick={openNewChapterDialog}
-                >
-                    הוסף פרק
-                </Button>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Box />
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                        variant="outlined"
+                        onClick={() => setSyllabusDialogOpen(true)}
+                    >
+                        נהל סילבוס
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        onClick={() => setCoursePresentationDialogOpen(true)}
+                    >
+                        מצגת הקורס
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={openNewChapterDialog}
+                    >
+                        הוסף פרק
+                    </Button>
+                </Box>
             </Box>
 
             {chapters.length === 0 ? (
@@ -353,7 +395,7 @@ export default function VideoCourseDetails() {
                 </Paper>
             ) : (
                 <Grid container spacing={2}>
-                    {chapters.map((chapter) => (
+                    {chapters.map((chapter, index) => (
                         // @ts-expect-error - MUI v7 Grid types issue
                         <Grid item xs={12} key={chapter.id}>
                             <Accordion defaultExpanded>
@@ -361,8 +403,51 @@ export default function VideoCourseDetails() {
                                     expandIcon={<ExpandMore />}
                                     sx={{ flexDirection: 'row-reverse' }}
                                 >
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                                        <Typography variant="h6">{chapter.title}</Typography>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            width: '100%',
+                                            gap: 2,
+                                            flexWrap: 'wrap'
+                                        }}
+                                    >
+                                        <Typography variant="h6">
+                                            פרק {index + 1}. {chapter.title}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // TODO: חיבור למצגת שיעור
+                                                }}
+                                            >
+                                                מצגת שיעור
+                                            </Button>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // TODO: חיבור לשיעורי בית
+                                                }}
+                                            >
+                                                שיעורי בית
+                                            </Button>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // TODO: חיבור לעבודה בכיתה
+                                                }}
+                                            >
+                                                עבודה בכיתה
+                                            </Button>
+                                        </Box>
                                         <Box>
                                             <IconButton
                                                 size="small"
@@ -566,6 +651,100 @@ export default function VideoCourseDetails() {
                 <DialogActions>
                     <Button onClick={() => setLessonDialogOpen(false)}>ביטול</Button>
                     <Button onClick={handleSaveLesson} variant="contained">
+                        שמור
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* דיאלוג סילבוס */}
+            <Dialog
+                open={syllabusDialogOpen}
+                onClose={() => setSyllabusDialogOpen(false)}
+                fullWidth
+                maxWidth="sm"
+                dir="rtl"
+            >
+                <DialogTitle>סילבוס הקורס</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        fullWidth
+                        margin="dense"
+                        label="לינק לסילבוס (URL)"
+                        value={syllabusLink}
+                        onChange={(e) => setSyllabusLink(e.target.value)}
+                        placeholder="https://..."
+                        type="url"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setSyllabusDialogOpen(false)}>ביטול</Button>
+                    <Button
+                        variant="contained"
+                        onClick={async () => {
+                            if (!courseId) return;
+                            try {
+                                await updateVideoCourse(courseId, {
+                                    syllabusLink: syllabusLink.trim() || undefined,
+                                });
+                                if (course) {
+                                    setCourse({
+                                        ...course,
+                                        syllabusLink: syllabusLink.trim() || undefined,
+                                    });
+                                }
+                                setSyllabusDialogOpen(false);
+                            } catch (err: any) {
+                                alert(err.message || 'שגיאה בשמירת הסילבוס');
+                            }
+                        }}
+                    >
+                        שמור
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* דיאלוג מצגת הקורס */}
+            <Dialog
+                open={coursePresentationDialogOpen}
+                onClose={() => setCoursePresentationDialogOpen(false)}
+                fullWidth
+                maxWidth="sm"
+                dir="rtl"
+            >
+                <DialogTitle>מצגת הקורס</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        fullWidth
+                        margin="dense"
+                        label="לינק למצגת הקורס (URL)"
+                        value={coursePresentationLink}
+                        onChange={(e) => setCoursePresentationLink(e.target.value)}
+                        placeholder="https://..."
+                        type="url"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCoursePresentationDialogOpen(false)}>ביטול</Button>
+                    <Button
+                        variant="contained"
+                        onClick={async () => {
+                            if (!courseId) return;
+                            try {
+                                await updateVideoCourse(courseId, {
+                                    coursePresentationLink: coursePresentationLink.trim() || undefined,
+                                });
+                                if (course) {
+                                    setCourse({
+                                        ...course,
+                                        coursePresentationLink: coursePresentationLink.trim() || undefined,
+                                    } as any);
+                                }
+                                setCoursePresentationDialogOpen(false);
+                            } catch (err: any) {
+                                alert(err.message || 'שגיאה בשמירת מצגת הקורס');
+                            }
+                        }}
+                    >
                         שמור
                     </Button>
                 </DialogActions>

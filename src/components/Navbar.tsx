@@ -97,7 +97,15 @@ export default function Navbar() {
             startIcon={<SchoolIcon />}
             sx={{ gap: 1 }}
           >
-            קורסים
+            ניהול קורסים פרונטלים
+          </Button>
+          <Button 
+            color="inherit" 
+            onClick={() => handleNavigation('/front-lessons')}
+            startIcon={<SchoolIcon />}
+            sx={{ gap: 1 }}
+          >
+            צפייה בשיעורים פרונטליים
           </Button>
           <Button 
             color="inherit"

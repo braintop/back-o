@@ -207,6 +207,26 @@ export default function VideoCourseView() {
                                 {course.description}
                             </Typography>
                         )}
+                        {course.syllabusLink && (
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                סילבוס הקורס:{' '}
+                                <a href={course.syllabusLink} target="_blank" rel="noopener noreferrer">
+                                    לצפייה בסילבוס לחץ כאן
+                                </a>
+                            </Typography>
+                        )}
+                        {(course as any).coursePresentationLink && (
+                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                מצגת הקורס:{' '}
+                                <a
+                                    href={(course as any).coursePresentationLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    לצפייה במצגת לחץ כאן
+                                </a>
+                            </Typography>
+                        )}
                     </Box>
                 )}
             </Box>
@@ -242,7 +262,7 @@ export default function VideoCourseView() {
                             </Typography>
                         ) : (
                             <List sx={{ width: '100%' }}>
-                                {chapters.map((chapter) => (
+                                {chapters.map((chapter, index) => (
                                     <Box key={chapter.id} sx={{ mb: 1 }}>
                                         <Accordion
                                             disableGutters
@@ -259,11 +279,8 @@ export default function VideoCourseView() {
                                                 expandIcon={<ExpandMoreIcon />}
                                                 sx={{ flexDirection: 'row-reverse' }}
                                             >
-                                                <Typography
-                                                    variant="subtitle2"
-                                                    sx={{ fontWeight: 'bold' }}
-                                                >
-                                                    {chapter.title}
+                                                <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                                                    פרק {index + 1}. {chapter.title}
                                                 </Typography>
                                             </AccordionSummary>
                                             <AccordionDetails sx={{ pr: 0, pl: 0 }}>

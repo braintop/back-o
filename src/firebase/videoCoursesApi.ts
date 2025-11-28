@@ -17,6 +17,7 @@ export interface VideoCourse {
     name: string;
     description: string;
     syllabusLink?: string;
+    coursePresentationLink?: string;
     imageUrl?: string;
     editorName?: string;
     introVideoUrl?: string;
@@ -29,6 +30,7 @@ export interface VideoCourseData {
     name: string;
     description: string;
     syllabusLink?: string;
+    coursePresentationLink?: string;
     imageUrl?: string;
     editorName?: string;
     introVideoUrl?: string;
@@ -50,6 +52,7 @@ export const createVideoCourse = async (data: VideoCourseData): Promise<string> 
         };
 
         if (data.syllabusLink) courseData.syllabusLink = data.syllabusLink;
+        if (data.coursePresentationLink) courseData.coursePresentationLink = data.coursePresentationLink;
         if (data.imageUrl) courseData.imageUrl = data.imageUrl;
         if (data.editorName) courseData.editorName = data.editorName;
         if (data.introVideoUrl) courseData.introVideoUrl = data.introVideoUrl;
@@ -121,6 +124,7 @@ export const updateVideoCourse = async (
         if (data.name !== undefined) updateData.name = data.name;
         if (data.description !== undefined) updateData.description = data.description;
         if (data.syllabusLink !== undefined) updateData.syllabusLink = data.syllabusLink || null;
+        if (data.coursePresentationLink !== undefined) updateData.coursePresentationLink = data.coursePresentationLink || null;
         if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl || null;
         if (data.editorName !== undefined) updateData.editorName = data.editorName || null;
         if (data.introVideoUrl !== undefined) updateData.introVideoUrl = data.introVideoUrl || null;

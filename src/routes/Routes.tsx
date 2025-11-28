@@ -4,6 +4,8 @@ import Register from '../pages/Register';
 import Lessons from '../pages/Lessons/Lessons';
 import Home from '../pages/Home';
 import Courses from '../pages/Courses';
+import FrontCourseLessonsView from '../pages/FrontCourseLessonsView';
+import FrontLessonsView from '../pages/FrontLessonsView';
 import CreateCourse from '../pages/CreateCourse';
 import EditCourse from '../pages/EditCourse';
 import CourseDetails from '../pages/CourseDetails';
@@ -44,6 +46,22 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <Courses />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/front-lessons" 
+        element={
+          <ProtectedRoute>
+            <FrontLessonsView />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/front-lessons/:courseId" 
+        element={
+          <ProtectedRoute>
+            <FrontCourseLessonsView />
           </ProtectedRoute>
         } 
       />

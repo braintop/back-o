@@ -44,7 +44,7 @@ export default function CreateLesson() {
         description: '',
         instructorId: '',
         attendanceChecked: false,
-        files: [] as Array<{ id: string; name: string; url: string; type: string; uploadedBy?: string; uploadedByName?: string }>
+        files: [] as Array<{ id: string; name: string; url: string; type: string; uploadedBy?: string; uploadedByName?: string; note?: string }>
     });
     const [users, setUsers] = useState<User[]>([]);
     const [sharedFiles, setSharedFiles] = useState<SharedFile[]>([]);
@@ -344,7 +344,7 @@ export default function CreateLesson() {
                                                     borderRadius: 1
                                                 }}
                                             >
-                                                <Box>
+                                                <Box sx={{ flexGrow: 1, mr: 1 }}>
                                                     <Typography variant="body2" fontWeight="bold">
                                                         {file.name}
                                                     </Typography>
@@ -353,6 +353,21 @@ export default function CreateLesson() {
                                                          file.type === 'worksheet' ? 'דף עבודה' : 
                                                          'פתרונות'}
                                                     </Typography>
+                                                    <TextField
+                                                        size="small"
+                                                        variant="outlined"
+                                                        label="תיאור לקובץ (למשל: שיעורי בית)"
+                                                        value={file.note || ''}
+                                                        onChange={(e) =>
+                                                            setFormData((prev) => ({
+                                                                ...prev,
+                                                                files: prev.files.map((f, i) =>
+                                                                    i === index ? { ...f, note: e.target.value } : f
+                                                                )
+                                                            }))
+                                                        }
+                                                        sx={{ mt: 1 }}
+                                                    />
                                                 </Box>
                                                 <Button
                                                     size="small"

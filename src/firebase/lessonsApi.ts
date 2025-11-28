@@ -23,7 +23,7 @@ export interface Lesson {
     instructorName?: string;
     taughtInLesson?: string;
     description?: string;
-    files?: Array<{ id: string; name: string; url: string; type: string; uploadedBy?: string; uploadedByName?: string }>;
+    files?: Array<{ id: string; name: string; url: string; type: string; uploadedBy?: string; uploadedByName?: string; note?: string }>;
     rating?: number;
     attendanceChecked?: boolean;
     createdAt: Date;
@@ -39,7 +39,7 @@ export interface LessonData {
     instructorName?: string;
     taughtInLesson?: string;
     description?: string;
-    files?: Array<{ id: string; name: string; url: string; type: string; uploadedBy?: string; uploadedByName?: string }>;
+    files?: Array<{ id: string; name: string; url: string; type: string; uploadedBy?: string; uploadedByName?: string; note?: string }>;
     rating?: number;
     attendanceChecked?: boolean;
 }
