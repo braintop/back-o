@@ -62,6 +62,14 @@ export default function VideoCourseDetails() {
     const [error, setError] = useState<string | null>(null);
     const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
+    const [courseDetailsDialogOpen, setCourseDetailsDialogOpen] = useState(false);
+    const [courseDetailsForm, setCourseDetailsForm] = useState({
+        name: '',
+        description: '',
+        editorName: '',
+        introVideoUrl: ''
+    });
+
     const [chapterDialogOpen, setChapterDialogOpen] = useState(false);
     const [editingChapter, setEditingChapter] = useState<VideoChapter | null>(null);
     const [chapterTitle, setChapterTitle] = useState('');
@@ -390,6 +398,51 @@ export default function VideoCourseDetails() {
         }
     };
 
+    const openCourseDetailsDialog = () => {
+        if (!course) return;
+        setCourseDetailsForm({
+            name: course.name || '',
+            description: course.description || '',
+            editorName: (course as any).editorName || '',
+            introVideoUrl: (course as any).introVideoUrl || ''
+        });
+        setCourseDetailsDialogOpen(true);
+    };
+
+    const handleCourseDetailsFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setCourseDetailsForm((prev) => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSaveCourseDetails = async () => {
+        if (!courseId) return;
+        try {
+            await updateVideoCourse(courseId, {
+                name: courseDetailsForm.name.trim(),
+                description: courseDetailsForm.description.trim(),
+                editorName: courseDetailsForm.editorName.trim() || undefined,
+                introVideoUrl: courseDetailsForm.introVideoUrl.trim() || undefined
+            });
+
+            if (course) {
+                setCourse({
+                    ...course,
+                    name: courseDetailsForm.name.trim(),
+                    description: courseDetailsForm.description.trim(),
+                    editorName: courseDetailsForm.editorName.trim() || undefined,
+                    introVideoUrl: courseDetailsForm.introVideoUrl.trim() || undefined
+                } as any);
+            }
+
+            setCourseDetailsDialogOpen(false);
+        } catch (err: any) {
+            alert(err.message || 'שגיאה בעדכון פרטי הקורס');
+        }
+    };
+
     if (isAdmin === null || loading) {
         return (
             <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -471,6 +524,12 @@ export default function VideoCourseDetails() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Box />
                 <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                        variant="outlined"
+                        onClick={openCourseDetailsDialog}
+                    >
+                        ערוך פרטי הקורס
+                    </Button>
                     <Button
                         variant="outlined"
                         onClick={() => setSyllabusDialogOpen(true)}
@@ -654,6 +713,68 @@ export default function VideoCourseDetails() {
                     </Box>
                 </Box>
             )}
+
+            {/* דיאלוג עריכת פרטי הקורס */}
+            <Dialog
+                open={courseDetailsDialogOpen}
+                onClose={() => setCourseDetailsDialogOpen(false)}
+                fullWidth
+                maxWidth="sm"
+                dir="rtl"
+            >
+                <DialogTitle>עריכת פרטי הקורס</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        margin="dense"
+                        label="שם הקורס"
+                        name="name"
+                        value={courseDetailsForm.name}
+                        onChange={handleCourseDetailsFieldChange}
+                        inputProps={{ dir: 'rtl', style: { textAlign: 'right' } }}
+                        InputLabelProps={{ style: { direction: 'rtl' } }}
+                    />
+                    <TextField
+                        fullWidth
+                        margin="dense"
+                        label="תיאור הקורס"
+                        name="description"
+                        value={courseDetailsForm.description}
+                        onChange={handleCourseDetailsFieldChange}
+                        multiline
+                        rows={3}
+                        inputProps={{ dir: 'rtl', style: { textAlign: 'right' } }}
+                        InputLabelProps={{ style: { direction: 'rtl' } }}
+                    />
+                    <TextField
+                        fullWidth
+                        margin="dense"
+                        label="שם העורך / המרצה"
+                        name="editorName"
+                        value={courseDetailsForm.editorName}
+                        onChange={handleCourseDetailsFieldChange}
+                        inputProps={{ dir: 'rtl', style: { textAlign: 'right' } }}
+                        InputLabelProps={{ style: { direction: 'rtl' } }}
+                    />
+                    <TextField
+                        fullWidth
+                        margin="dense"
+                        label="לינק לוידאו פתיחה של הקורס"
+                        name="introVideoUrl"
+                        value={courseDetailsForm.introVideoUrl}
+                        onChange={handleCourseDetailsFieldChange}
+                        placeholder="https://..."
+                        type="url"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCourseDetailsDialogOpen(false)}>ביטול</Button>
+                    <Button variant="contained" onClick={handleSaveCourseDetails}>
+                        שמור
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {/* דיאלוג פרק */}
             <Dialog

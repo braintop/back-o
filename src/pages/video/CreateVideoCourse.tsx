@@ -43,7 +43,10 @@ export default function CreateVideoCourse() {
         { value: '/full2.png', label: 'full2.png' },
         { value: '/full3.png', label: 'full3.png' },
         { value: '/full4.png', label: 'full4.png' },
-        { value: '/java.png', label: 'java.png' }
+        { value: '/java.png', label: 'java.png' },
+        { value: '/java-collections.png', label: 'java-collections.png' },
+        { value: '/sql.png', label: 'sql.png' },
+        { value: '/data-structure.png', label: 'data-structure.png' }
     ];
 
     useEffect(() => {
