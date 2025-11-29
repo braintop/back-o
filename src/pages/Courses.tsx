@@ -17,6 +17,8 @@ import { Add, FileDownload } from '@mui/icons-material';
 import { getCourses, type Course } from '../firebase/coursesApi';
 import { getLessonsByCourseId, type Lesson } from '../firebase/lessonsApi';
 import * as XLSX from 'xlsx';
+import { auth } from '../firebase/firebase';
+import { getUserByUid } from '../firebase/usersApi';
 
 export default function Courses() {
     const navigate = useNavigate();
@@ -24,9 +26,34 @@ export default function Courses() {
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [checkingAccess, setCheckingAccess] = useState(true);
 
     useEffect(() => {
-        loadCourses();
+        const checkAccessAndLoad = async () => {
+            try {
+                const user = auth.currentUser;
+                if (!user) {
+                    navigate('/login');
+                    return;
+                }
+
+                const currentUser = await getUserByUid(user.uid);
+                if (currentUser?.role !== 'admin') {
+                    navigate('/front-lessons');
+                    return;
+                }
+
+                await loadCourses();
+            } catch (err: any) {
+                console.error('שגיאה בבדיקת הרשאות לניהול קורסים פרונטליים:', err);
+                navigate('/front-lessons');
+            } finally {
+                setCheckingAccess(false);
+            }
+        };
+
+        checkAccessAndLoad();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadCourses = async () => {
@@ -122,7 +149,7 @@ export default function Courses() {
         }
     };
 
-    if (loading) {
+    if (checkingAccess || loading) {
         return (
             <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>

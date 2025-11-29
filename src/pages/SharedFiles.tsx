@@ -36,7 +36,7 @@ import {
     type SharedFile 
 } from '../firebase/sharedFilesApi';
 import { auth } from '../firebase/firebase';
-import { getUsers, type User } from '../firebase/usersApi';
+import { getUsers, getUserByUid, type User } from '../firebase/usersApi';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -69,6 +69,7 @@ export default function SharedFiles() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingFile, setEditingFile] = useState<SharedFile | null>(null);
     const [users, setUsers] = useState<User[]>([]);
+    const [isStudent, setIsStudent] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         type: 'presentation' as 'presentation' | 'worksheet' | 'solutions',
@@ -79,6 +80,7 @@ export default function SharedFiles() {
     useEffect(() => {
         loadFiles();
         loadUsers();
+        loadCurrentUserRole();
     }, []);
 
     useEffect(() => {
@@ -104,6 +106,20 @@ export default function SharedFiles() {
             setUsers(usersList);
         } catch (err: any) {
             console.error('Error loading users:', err);
+        }
+    };
+
+    const loadCurrentUserRole = async () => {
+        try {
+            if (!auth.currentUser?.uid) {
+                setIsStudent(false);
+                return;
+            }
+            const current = await getUserByUid(auth.currentUser.uid);
+            setIsStudent(current?.role === 'student');
+        } catch (err) {
+            console.error('Error loading current user role:', err);
+            setIsStudent(false);
         }
     };
 
@@ -145,6 +161,9 @@ export default function SharedFiles() {
     };
 
     const handleOpenDialog = (file?: SharedFile) => {
+        if (isStudent) {
+            return;
+        }
         if (file) {
             setEditingFile(file);
             setFormData({
@@ -182,6 +201,11 @@ export default function SharedFiles() {
             return;
         }
 
+        if (isStudent) {
+            setError('לסטודנטים אין הרשאה להוסיף או לערוך קבצים');
+            return;
+        }
+
         try {
             // מצא את המשתמש הנוכחי כדי לקבל את השם
             const currentUser = users.find(u => u.uid === auth.currentUser?.uid);
@@ -214,6 +238,11 @@ export default function SharedFiles() {
     };
 
     const handleDelete = async (fileId: string) => {
+        if (isStudent) {
+            setError('לסטודנטים אין הרשאה למחוק קבצים');
+            return;
+        }
+
         if (!window.confirm('האם אתה בטוח שברצונך למחוק את הקובץ?')) {
             return;
         }
@@ -245,13 +274,15 @@ export default function SharedFiles() {
                 <Typography variant="h4" component="h1">
                     קבצי שיעור - מאגר משותף
                 </Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<Add />}
-                    onClick={() => handleOpenDialog()}
-                >
-                    הוסף קובץ
-                </Button>
+                {!isStudent && (
+                    <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={() => handleOpenDialog()}
+                    >
+                        הוסף קובץ
+                    </Button>
+                )}
             </Box>
 
             {error && (
@@ -315,13 +346,13 @@ export default function SharedFiles() {
                                         <TableCell>תיאור</TableCell>
                                         <TableCell>נטען על ידי</TableCell>
                                         <TableCell>לינק</TableCell>
-                                        <TableCell>פעולות</TableCell>
+                                        {!isStudent && <TableCell>פעולות</TableCell>}
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {filteredFiles.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                                            <TableCell colSpan={isStudent ? 4 : 5} align="center" sx={{ py: 4 }}>
                                                 <Typography variant="body2" color="text.secondary">
                                                     אין קבצים עדיין
                                                 </Typography>
@@ -344,22 +375,24 @@ export default function SharedFiles() {
                                                         פתח קובץ
                                                     </Button>
                                                 </TableCell>
-                                                <TableCell>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => handleOpenDialog(file)}
-                                                        color="primary"
-                                                    >
-                                                        <Edit fontSize="small" />
-                                                    </IconButton>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => handleDelete(file.id!)}
-                                                        color="error"
-                                                    >
-                                                        <Delete fontSize="small" />
-                                                    </IconButton>
-                                                </TableCell>
+                                                {!isStudent && (
+                                                    <TableCell>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => handleOpenDialog(file)}
+                                                            color="primary"
+                                                        >
+                                                            <Edit fontSize="small" />
+                                                        </IconButton>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => handleDelete(file.id!)}
+                                                            color="error"
+                                                        >
+                                                            <Delete fontSize="small" />
+                                                        </IconButton>
+                                                    </TableCell>
+                                                )}
                                             </TableRow>
                                         ))
                                     )}

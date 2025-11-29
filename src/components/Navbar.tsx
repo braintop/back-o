@@ -91,14 +91,16 @@ export default function Navbar() {
               הרשמה
             </Button>
           )}
-          <Button 
-            color="inherit" 
-            onClick={() => handleNavigation('/courses')}
-            startIcon={<SchoolIcon />}
-            sx={{ gap: 1 }}
-          >
-            ניהול קורסים פרונטלים
-          </Button>
+          {isAdmin && (
+            <Button 
+              color="inherit" 
+              onClick={() => handleNavigation('/courses')}
+              startIcon={<SchoolIcon />}
+              sx={{ gap: 1 }}
+            >
+              ניהול קורסים פרונטלים
+            </Button>
+          )}
           <Button 
             color="inherit" 
             onClick={() => handleNavigation('/front-lessons')}
