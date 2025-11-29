@@ -41,7 +41,8 @@ export default function CreateCourse() {
         { value: '/full1.png', label: 'full1.png' },
         { value: '/full2.png', label: 'full2.png' },
         { value: '/full3.png', label: 'full3.png' },
-        { value: '/full4.png', label: 'full4.png' }
+        { value: '/full4.png', label: 'full4.png' },
+        { value: '/java.png', label: 'java.png' }
     ];
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);

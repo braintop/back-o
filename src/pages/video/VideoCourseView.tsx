@@ -284,6 +284,50 @@ export default function VideoCourseView() {
                                                 </Typography>
                                             </AccordionSummary>
                                             <AccordionDetails sx={{ pr: 0, pl: 0 }}>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        gap: 1,
+                                                        flexWrap: 'wrap',
+                                                        justifyContent: 'flex-end',
+                                                        mb: 1
+                                                    }}
+                                                >
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        component="a"
+                                                        href={(chapter as any).presentationLink || undefined}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        disabled={!(chapter as any).presentationLink}
+                                                    >
+                                                        מצגת הפרק
+                                                    </Button>
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        component="a"
+                                                        href={(chapter as any).homeworkLink || undefined}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        disabled={!(chapter as any).homeworkLink}
+                                                    >
+                                                        שיעורי בית
+                                                    </Button>
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        component="a"
+                                                        href={(chapter as any).classworkLink || undefined}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        disabled={!(chapter as any).classworkLink}
+                                                    >
+                                                        עבודה בכיתה
+                                                    </Button>
+                                                </Box>
+
                                                 {chapter.lessons.map((lesson) => (
                                                     <ListItemButton
                                                         key={lesson.id}

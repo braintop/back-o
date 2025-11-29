@@ -80,6 +80,15 @@ export default function VideoCourseDetails() {
     const [syllabusLink, setSyllabusLink] = useState('');
     const [coursePresentationDialogOpen, setCoursePresentationDialogOpen] = useState(false);
     const [coursePresentationLink, setCoursePresentationLink] = useState('');
+    const [chapterPresentationDialogOpen, setChapterPresentationDialogOpen] = useState(false);
+    const [chapterPresentationLink, setChapterPresentationLink] = useState('');
+    const [currentChapterForPresentation, setCurrentChapterForPresentation] = useState<VideoChapter | null>(null);
+    const [chapterHomeworkDialogOpen, setChapterHomeworkDialogOpen] = useState(false);
+    const [chapterHomeworkLink, setChapterHomeworkLink] = useState('');
+    const [currentChapterForHomework, setCurrentChapterForHomework] = useState<VideoChapter | null>(null);
+    const [chapterClassworkDialogOpen, setChapterClassworkDialogOpen] = useState(false);
+    const [chapterClassworkLink, setChapterClassworkLink] = useState('');
+    const [currentChapterForClasswork, setCurrentChapterForClasswork] = useState<VideoChapter | null>(null);
 
     useEffect(() => {
         const checkAdminAndLoad = async () => {
@@ -183,6 +192,103 @@ export default function VideoCourseDetails() {
             await loadData();
         } catch (err: any) {
             alert(err.message || 'שגיאה בשמירת פרק');
+        }
+    };
+
+    const openChapterPresentationDialog = (chapter: VideoChapter) => {
+        setCurrentChapterForPresentation(chapter);
+        setChapterPresentationLink((chapter as any).presentationLink || '');
+        setChapterPresentationDialogOpen(true);
+    };
+
+    const handleSaveChapterPresentation = async () => {
+        if (!currentChapterForPresentation?.id) return;
+
+        try {
+            await updateVideoChapter(currentChapterForPresentation.id, {
+                presentationLink: chapterPresentationLink.trim() || undefined
+            });
+
+            // עדכון מיידי במצב המקומי בלי לטעון הכל מחדש
+            setChapters((prev) =>
+                prev.map((c) =>
+                    c.id === currentChapterForPresentation.id
+                        ? ({
+                            ...c,
+                            presentationLink: chapterPresentationLink.trim() || undefined
+                        } as ChapterWithLessons)
+                        : c
+                )
+            );
+
+            setChapterPresentationDialogOpen(false);
+            setCurrentChapterForPresentation(null);
+        } catch (err: any) {
+            alert(err.message || 'שגיאה בשמירת מצגת השיעור');
+        }
+    };
+
+    const openChapterHomeworkDialog = (chapter: VideoChapter) => {
+        setCurrentChapterForHomework(chapter);
+        setChapterHomeworkLink((chapter as any).homeworkLink || '');
+        setChapterHomeworkDialogOpen(true);
+    };
+
+    const handleSaveChapterHomework = async () => {
+        if (!currentChapterForHomework?.id) return;
+
+        try {
+            await updateVideoChapter(currentChapterForHomework.id, {
+                homeworkLink: chapterHomeworkLink.trim() || undefined
+            });
+
+            setChapters((prev) =>
+                prev.map((c) =>
+                    c.id === currentChapterForHomework.id
+                        ? ({
+                            ...c,
+                            homeworkLink: chapterHomeworkLink.trim() || undefined
+                        } as ChapterWithLessons)
+                        : c
+                )
+            );
+
+            setChapterHomeworkDialogOpen(false);
+            setCurrentChapterForHomework(null);
+        } catch (err: any) {
+            alert(err.message || 'שגיאה בשמירת קישור שיעורי הבית');
+        }
+    };
+
+    const openChapterClassworkDialog = (chapter: VideoChapter) => {
+        setCurrentChapterForClasswork(chapter);
+        setChapterClassworkLink((chapter as any).classworkLink || '');
+        setChapterClassworkDialogOpen(true);
+    };
+
+    const handleSaveChapterClasswork = async () => {
+        if (!currentChapterForClasswork?.id) return;
+
+        try {
+            await updateVideoChapter(currentChapterForClasswork.id, {
+                classworkLink: chapterClassworkLink.trim() || undefined
+            });
+
+            setChapters((prev) =>
+                prev.map((c) =>
+                    c.id === currentChapterForClasswork.id
+                        ? ({
+                            ...c,
+                            classworkLink: chapterClassworkLink.trim() || undefined
+                        } as ChapterWithLessons)
+                        : c
+                )
+            );
+
+            setChapterClassworkDialogOpen(false);
+            setCurrentChapterForClasswork(null);
+        } catch (err: any) {
+            alert(err.message || 'שגיאה בשמירת קישור עבודה בכיתה');
         }
     };
 
@@ -420,9 +526,10 @@ export default function VideoCourseDetails() {
                                             <Button
                                                 size="small"
                                                 variant="outlined"
+                                                component="span"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    // TODO: חיבור למצגת שיעור
+                                                    openChapterPresentationDialog(chapter);
                                                 }}
                                             >
                                                 מצגת שיעור
@@ -430,9 +537,10 @@ export default function VideoCourseDetails() {
                                             <Button
                                                 size="small"
                                                 variant="outlined"
+                                                component="span"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    // TODO: חיבור לשיעורי בית
+                                                    openChapterHomeworkDialog(chapter);
                                                 }}
                                             >
                                                 שיעורי בית
@@ -440,9 +548,10 @@ export default function VideoCourseDetails() {
                                             <Button
                                                 size="small"
                                                 variant="outlined"
+                                                component="span"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    // TODO: חיבור לעבודה בכיתה
+                                                    openChapterClassworkDialog(chapter);
                                                 }}
                                             >
                                                 עבודה בכיתה
@@ -745,6 +854,90 @@ export default function VideoCourseDetails() {
                             }
                         }}
                     >
+                        שמור
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* דיאלוג מצגת שיעור לפרק */}
+            <Dialog
+                open={chapterPresentationDialogOpen}
+                onClose={() => setChapterPresentationDialogOpen(false)}
+                fullWidth
+                maxWidth="sm"
+                dir="rtl"
+            >
+                <DialogTitle>מצגת שיעור לפרק</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        fullWidth
+                        margin="dense"
+                        label="לינק למצגת השיעור (URL)"
+                        value={chapterPresentationLink}
+                        onChange={(e) => setChapterPresentationLink(e.target.value)}
+                        placeholder="https://..."
+                        type="url"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setChapterPresentationDialogOpen(false)}>ביטול</Button>
+                    <Button variant="contained" onClick={handleSaveChapterPresentation}>
+                        שמור
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* דיאלוג שיעורי בית לפרק */}
+            <Dialog
+                open={chapterHomeworkDialogOpen}
+                onClose={() => setChapterHomeworkDialogOpen(false)}
+                fullWidth
+                maxWidth="sm"
+                dir="rtl"
+            >
+                <DialogTitle>שיעורי בית לפרק</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        fullWidth
+                        margin="dense"
+                        label="לינק לשיעורי הבית (URL)"
+                        value={chapterHomeworkLink}
+                        onChange={(e) => setChapterHomeworkLink(e.target.value)}
+                        placeholder="https://..."
+                        type="url"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setChapterHomeworkDialogOpen(false)}>ביטול</Button>
+                    <Button variant="contained" onClick={handleSaveChapterHomework}>
+                        שמור
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* דיאלוג עבודה בכיתה לפרק */}
+            <Dialog
+                open={chapterClassworkDialogOpen}
+                onClose={() => setChapterClassworkDialogOpen(false)}
+                fullWidth
+                maxWidth="sm"
+                dir="rtl"
+            >
+                <DialogTitle>עבודה בכיתה לפרק</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        fullWidth
+                        margin="dense"
+                        label="לינק לעבודה בכיתה (URL)"
+                        value={chapterClassworkLink}
+                        onChange={(e) => setChapterClassworkLink(e.target.value)}
+                        placeholder="https://..."
+                        type="url"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setChapterClassworkDialogOpen(false)}>ביטול</Button>
+                    <Button variant="contained" onClick={handleSaveChapterClasswork}>
                         שמור
                     </Button>
                 </DialogActions>

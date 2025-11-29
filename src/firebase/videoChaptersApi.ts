@@ -18,12 +18,18 @@ export interface VideoChapter {
     title: string;
     order: number;
     createdAt: Date;
+    presentationLink?: string;
+    homeworkLink?: string;
+    classworkLink?: string;
 }
 
 export interface VideoChapterData {
     courseId: string;
     title: string;
     order: number;
+    presentationLink?: string;
+    homeworkLink?: string;
+    classworkLink?: string;
 }
 
 const COLLECTION_NAME = 'videoChapters';
@@ -31,12 +37,16 @@ const COLLECTION_NAME = 'videoChapters';
 // יצירת פרק חדש
 export const createVideoChapter = async (data: VideoChapterData): Promise<string> => {
     try {
-        const chapterData = {
+        const chapterData: any = {
             courseId: data.courseId,
             title: data.title,
             order: data.order,
             createdAt: Timestamp.now()
         };
+
+        if (data.presentationLink !== undefined) chapterData.presentationLink = data.presentationLink;
+        if (data.homeworkLink !== undefined) chapterData.homeworkLink = data.homeworkLink;
+        if (data.classworkLink !== undefined) chapterData.classworkLink = data.classworkLink;
 
         const docRef = await addDoc(collection(db, COLLECTION_NAME), chapterData);
         return docRef.id;
@@ -90,7 +100,7 @@ export const getVideoChapterById = async (chapterId: string): Promise<VideoChapt
 // עדכון פרק
 export const updateVideoChapter = async (
     chapterId: string,
-    data: Partial<Pick<VideoChapterData, 'title' | 'order'>>
+    data: Partial<Pick<VideoChapterData, 'title' | 'order' | 'presentationLink' | 'homeworkLink' | 'classworkLink'>>
 ): Promise<void> => {
     try {
         const docRef = doc(db, COLLECTION_NAME, chapterId);
@@ -98,6 +108,9 @@ export const updateVideoChapter = async (
 
         if (data.title !== undefined) updateData.title = data.title;
         if (data.order !== undefined) updateData.order = data.order;
+        if (data.presentationLink !== undefined) updateData.presentationLink = data.presentationLink || null;
+        if (data.homeworkLink !== undefined) updateData.homeworkLink = data.homeworkLink || null;
+        if (data.classworkLink !== undefined) updateData.classworkLink = data.classworkLink || null;
 
         await updateDoc(docRef, updateData);
     } catch (error: any) {
