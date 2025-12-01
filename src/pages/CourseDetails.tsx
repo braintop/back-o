@@ -38,6 +38,7 @@ export default function CourseDetails() {
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [canEdit, setCanEdit] = useState(false);
+    const [canSeeAttendanceButton, setCanSeeAttendanceButton] = useState(false);
 
     useEffect(() => {
         if (courseId) {
@@ -66,16 +67,21 @@ export default function CourseDetails() {
                     try {
                         const currentUser = await getUserByUid(auth.currentUser.uid);
                         const isAdmin = currentUser?.role === 'admin';
+                        const isTeacher = currentUser?.role === 'teacher';
                         const uid = auth.currentUser.uid;
                         const isOwner = courseData.createdBy === uid;
                         const isEditor = Array.isArray(courseData.editors) && courseData.editors.includes(uid);
+
                         setCanEdit(Boolean(isAdmin || isOwner || isEditor));
+                        setCanSeeAttendanceButton(Boolean(isAdmin || isTeacher));
                     } catch (permErr) {
                         console.error('Error checking course permissions:', permErr);
                         setCanEdit(false);
+                        setCanSeeAttendanceButton(false);
                     }
                 } else {
                     setCanEdit(false);
+                    setCanSeeAttendanceButton(false);
                 }
             } else {
                 setError('קורס לא נמצא');
@@ -438,6 +444,21 @@ export default function CourseDetails() {
                                     onClick={exportToExcel}
                                 >
                                     ייצא ל-Excel
+                                </Button>
+                            )}
+                            {canSeeAttendanceButton && (
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() =>
+                                        window.open(
+                                            'https://docs.google.com/spreadsheets/d/1bF3fBiNxoG1q0vJGcacCymfzWO4BeIR4BGyINI9wGi0/edit?usp=sharing',
+                                            '_blank',
+                                            'noopener,noreferrer'
+                                        )
+                                    }
+                                >
+                                    נוכחות
                                 </Button>
                             )}
                         </>
