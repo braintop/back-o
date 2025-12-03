@@ -32,7 +32,14 @@ export default function AppRoutes() {
         } 
       />
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route 
+        path="/register" 
+        element={
+          <ProtectedRoute allowedEmails={['asaf.amir@gmail.com']}>
+            <Register />
+          </ProtectedRoute>
+        } 
+      />
       <Route 
         path="/lessons" 
         element={

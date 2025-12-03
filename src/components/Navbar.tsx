@@ -81,10 +81,10 @@ export default function Navbar() {
           >
             בית
           </Button>
-          {!isAuthenticated && (
+          {isAuthenticated && userEmail === 'asaf.amir@gmail.com' && (
             <Button 
               color="inherit" 
-              onClick={() => navigate('/register')}
+              onClick={() => handleNavigation('/register')}
               startIcon={<PersonAddIcon />}
               sx={{ gap: 1 }}
             >

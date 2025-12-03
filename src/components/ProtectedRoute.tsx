@@ -6,15 +6,18 @@ import { CircularProgress, Box } from '@mui/material';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
+    allowedEmails?: string[];
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, allowedEmails }: ProtectedRouteProps) {
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [userEmail, setUserEmail] = useState<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setIsAuthenticated(!!user);
+            setUserEmail(user?.email ?? null);
             setLoading(false);
         });
 
@@ -31,6 +34,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
+    }
+
+    if (allowedEmails && (!userEmail || !allowedEmails.includes(userEmail))) {
+        return <Navigate to="/" replace />;
     }
 
     return <>{children}</>;
