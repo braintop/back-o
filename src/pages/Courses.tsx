@@ -11,10 +11,12 @@ import {
     CardActions,
     CircularProgress,
     Alert,
-    CardMedia
+    CardMedia,
+    IconButton,
+    Tooltip
 } from '@mui/material';
-import { Add, FileDownload } from '@mui/icons-material';
-import { getCourses, type Course } from '../firebase/coursesApi';
+import { Add, FileDownload, Delete } from '@mui/icons-material';
+import { getCourses, deleteCourse, type Course } from '../firebase/coursesApi';
 import { getLessonsByCourseId, type Lesson } from '../firebase/lessonsApi';
 import * as XLSX from 'xlsx';
 import { auth } from '../firebase/firebase';
@@ -27,6 +29,7 @@ export default function Courses() {
     const [exporting, setExporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [checkingAccess, setCheckingAccess] = useState(true);
+    const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
 
     useEffect(() => {
         const checkAccessAndLoad = async () => {
@@ -149,6 +152,34 @@ export default function Courses() {
         }
     };
 
+    const handleDeleteCourse = async (course: Course) => {
+        if (!course.id) return;
+
+        try {
+            setError(null);
+            setDeletingCourseId(course.id);
+
+            const lessons = await getLessonsByCourseId(course.id);
+            if (lessons.length > 0) {
+                alert('לא ניתן למחוק קורס שיש לו שיעורים. מחק קודם את כל השיעורים של הקורס.');
+                return;
+            }
+
+            const confirmed = window.confirm(`האם אתה בטוח שברצונך למחוק את הקורס "${course.name}"? פעולה זו אינה הפיכה.`);
+            if (!confirmed) {
+                return;
+            }
+
+            await deleteCourse(course.id);
+            setCourses(prev => prev.filter(c => c.id !== course.id));
+        } catch (err: any) {
+            console.error('שגיאה במחיקת קורס:', err);
+            setError(err.message || 'שגיאה במחיקת קורס');
+        } finally {
+            setDeletingCourseId(null);
+        }
+    };
+
     if (checkingAccess || loading) {
         return (
             <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -236,6 +267,21 @@ export default function Courses() {
                                     >
                                         צפה בקורס
                                     </Button>
+                                    <Tooltip title="מחק קורס">
+                                        <span>
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteCourse(course);
+                                                }}
+                                                disabled={deletingCourseId === course.id}
+                                                color="error"
+                                            >
+                                                <Delete fontSize="small" />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
                                 </CardActions>
                             </Card>
                         </Grid>
