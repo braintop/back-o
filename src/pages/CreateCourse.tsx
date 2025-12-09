@@ -45,7 +45,8 @@ export default function CreateCourse() {
         { value: '/java.png', label: 'java.png' },
         { value: '/java-collections.png', label: 'java-collections.png' },
         { value: '/sql.png', label: 'sql.png' },
-        { value: '/data-structure.png', label: 'data-structure.png' }
+        { value: '/data-structure.png', label: 'data-structure.png' },
+        { value: '/design-pattern.png', label: 'design-pattern.png' }
     ];
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
