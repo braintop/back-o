@@ -38,6 +38,9 @@ export default function CreateCourse() {
     // רשימת תמונות מתיקיית public
     const availableImages = [
         { value: '/da1.png', label: 'da1.png' },
+        { value: '/f1.png', label: 'f1.png' },
+        { value: '/f2.png', label: 'f2.png' },
+        { value: '/f3.png', label: 'f3.png' },
         { value: '/full1.png', label: 'full1.png' },
         { value: '/full2.png', label: 'full2.png' },
         { value: '/full3.png', label: 'full3.png' },
@@ -47,7 +50,8 @@ export default function CreateCourse() {
         { value: '/sql.png', label: 'sql.png' },
         { value: '/data-structure.png', label: 'data-structure.png' },
         { value: '/design-pattern.png', label: 'design-pattern.png' },
-        { value: '/statistic.png', label: 'statistic.png' }
+        { value: '/statistic.png', label: 'statistic.png' },
+        { value: '/assembly.png', label: 'assembly.png' }
     ];
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
