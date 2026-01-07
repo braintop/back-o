@@ -294,22 +294,35 @@ export default function CreateLesson() {
                             </Grid>
                             {/* 4. בדקתי נוכחות */}
                             {/* @ts-expect-error - MUI v7 Grid types issue */}
-                            <Grid item xs={12} sm={6} sx={{ display: 'flex', alignItems: 'center' }}>
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={formData.attendanceChecked}
-                                            onChange={(e) =>
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    attendanceChecked: e.target.checked
-                                                }))
-                                            }
-                                        />
-                                    }
-                                    label="בדקתי נוכחות"
-                                    sx={{ mr: 1 }}
-                                />
+                            <Grid item xs={12} sm={6}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={formData.attendanceChecked}
+                                                onChange={(e) =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        attendanceChecked: e.target.checked
+                                                    }))
+                                                }
+                                            />
+                                        }
+                                        label="בדקתי נוכחות"
+                                        sx={{ mr: 1 }}
+                                    />
+                                    {/* כפתור נוכחות שפותח את קובץ הגוגל שיטס */}
+                                    <Button
+                                        variant="contained"
+                                        color="warning"
+                                        href="https://docs.google.com/spreadsheets/d/1bF3fBiNxoG1q0vJGcacCymfzWO4BeIR4BGyINI9wGi0/edit?gid=848036209#gid=848036209"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="attendance-button"
+                                    >
+                                        נוכחות
+                                    </Button>
+                                </Box>
                             </Grid>
                             {/* 6. קבצים */}
                             {/* @ts-expect-error - MUI v7 Grid types issue */}
