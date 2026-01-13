@@ -19,6 +19,7 @@ import EditLesson from '../pages/EditLesson';
 import SharedFiles from '../pages/SharedFiles';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Profile from '../pages/Profile';
+import ForgotPassword from '../pages/ForgotPassword';
 
 export default function AppRoutes() {
   return (
@@ -32,6 +33,7 @@ export default function AppRoutes() {
         } 
       />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route 
         path="/register" 
         element={

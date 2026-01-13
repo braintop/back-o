@@ -100,6 +100,14 @@ export default function Login() {
                         >
                             {loading ? <CircularProgress size={24} /> : 'התחברות'}
                         </Button>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Button
+                                variant="text"
+                                onClick={() => navigate('/forgot-password')}
+                            >
+                                שכחתי סיסמא
+                            </Button>
+                        </Box>
                     </form>
                 </Paper>
             </Box>

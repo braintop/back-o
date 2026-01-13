@@ -2,7 +2,8 @@ import {
     createUserWithEmailAndPassword, 
     updateProfile,
     signInWithEmailAndPassword,
-    signOut
+    signOut,
+    sendPasswordResetEmail
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
@@ -83,6 +84,17 @@ export const logoutUser = async (): Promise<void> => {
         await signOut(auth);
     } catch (error: any) {
         throw new Error(error.message || 'שגיאה ביציאה');
+    }
+};
+
+export const resetPassword = async (email: string): Promise<void> => {
+    if (!auth) {
+        throw new Error('Firebase לא מאותחל. אנא הוסף משתני סביבה ב-Vercel Settings > Environment Variables.');
+    }
+    try {
+        await sendPasswordResetEmail(auth, email);
+    } catch (error: any) {
+        throw new Error(error.message || 'שגיאה בשליחת קישור לאיפוס סיסמה');
     }
 };
 
