@@ -61,12 +61,23 @@ export default function Games() {
                 {game.description}
               </Typography>
             </CardContent>
-            <CardActions sx={{ justifyContent: 'center', pb: 2, gap: 1 }}>
+            <CardActions 
+              sx={{ 
+                justifyContent: 'center', 
+                pb: 2, 
+                gap: 1,
+                flexWrap: 'wrap',
+                '& > button': {
+                  minWidth: { xs: '120px', sm: 'auto' }
+                }
+              }}
+            >
               <Button 
                 variant="contained" 
                 color="primary"
                 onClick={() => navigate(game.route)}
                 startIcon={<SchoolIcon />}
+                sx={{ flexGrow: { xs: 1, sm: 0 } }}
               >
                 שחק עכשיו
               </Button>
@@ -74,6 +85,7 @@ export default function Games() {
                 variant="outlined"
                 onClick={() => navigate(`${game.route}/leaderboard`)}
                 startIcon={<EmojiEventsIcon />}
+                sx={{ flexGrow: { xs: 1, sm: 0 } }}
               >
                 טבלת מובילים
               </Button>
@@ -81,6 +93,7 @@ export default function Games() {
                 variant="outlined"
                 onClick={() => navigate(`${game.route}/history`)}
                 startIcon={<HistoryIcon />}
+                sx={{ flexGrow: { xs: 1, sm: 0 } }}
               >
                 היסטוריה
               </Button>

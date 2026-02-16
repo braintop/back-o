@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AppBar, Toolbar, Button, Box, Avatar, Menu, MenuItem, IconButton, Tooltip } from '@mui/material';
+import { AppBar, Toolbar, Button, Box, Avatar, Menu, MenuItem, IconButton, Tooltip, Drawer, List, ListItem, ListItemIcon, ListItemText, ListItemButton, Divider } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase/firebase';
@@ -13,6 +13,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import MenuIcon from '@mui/icons-material/Menu';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export default function Navbar() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -74,126 +76,265 @@ export default function Navbar() {
     navigate('/profile');
   };
 
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const handleMobileNavigation = (path: string) => {
+    setMobileOpen(false);
+    handleNavigation(path);
+  };
+
   const avatarLetter = userEmail ? userEmail.charAt(0).toUpperCase() : '?';
 
+  const drawer = (
+    <Box onClick={handleDrawerToggle} sx={{ width: 250, direction: 'rtl' }}>
+      <List>
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleMobileNavigation('/')}>
+            <ListItemIcon>
+              <HomeIcon />
+            </ListItemIcon>
+            <ListItemText primary="בית" />
+          </ListItemButton>
+        </ListItem>
+        {isAuthenticated && userEmail === 'asaf.amir@gmail.com' && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => handleMobileNavigation('/register')}>
+              <ListItemIcon>
+                <PersonAddIcon />
+              </ListItemIcon>
+              <ListItemText primary="הרשמה" />
+            </ListItemButton>
+          </ListItem>
+        )}
+        {isAdmin && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => handleMobileNavigation('/courses')}>
+              <ListItemIcon>
+                <SchoolIcon />
+              </ListItemIcon>
+              <ListItemText primary="ניהול קורסים פרונטלים" />
+            </ListItemButton>
+          </ListItem>
+        )}
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleMobileNavigation('/front-lessons')}>
+            <ListItemIcon>
+              <SchoolIcon />
+            </ListItemIcon>
+            <ListItemText primary="צפייה בשיעורים פרונטליים" />
+          </ListItemButton>
+        </ListItem>
+        {isAdmin && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => handleMobileNavigation('/video-courses')}>
+              <ListItemIcon>
+                <AddCircleOutlineIcon />
+              </ListItemIcon>
+              <ListItemText primary="קורסי וידאו +" />
+            </ListItemButton>
+          </ListItem>
+        )}
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleMobileNavigation('/video-courses/view')}>
+            <ListItemIcon>
+              <PlayCircleOutlineIcon />
+            </ListItemIcon>
+            <ListItemText primary="צפייה בקורסי וידאו" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleMobileNavigation('/shared-files')}>
+            <ListItemIcon>
+              <FolderIcon />
+            </ListItemIcon>
+            <ListItemText primary="קבצי שיעור" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => { setMobileOpen(false); navigate('/games'); }}>
+            <ListItemIcon>
+              <SportsEsportsIcon />
+            </ListItemIcon>
+            <ListItemText primary="משחקים" />
+          </ListItemButton>
+        </ListItem>
+        <Divider />
+        {!isAuthenticated && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => { setMobileOpen(false); navigate('/login'); }}>
+              <ListItemIcon>
+                <LoginIcon />
+              </ListItemIcon>
+              <ListItemText primary="התחבר" />
+            </ListItemButton>
+          </ListItem>
+        )}
+      </List>
+    </Box>
+  );
+
   return (
-    <AppBar position="static" dir="rtl">
-      <Toolbar sx={{ direction: 'rtl' }}>
-        <Box sx={{ flexGrow: 1, display: 'flex', gap: 2, justifyContent: 'flex-start' }}>
-          <Button 
-            color="inherit" 
-            onClick={() => handleNavigation('/')}
-            startIcon={<HomeIcon />}
-            sx={{ gap: 1 }}
+    <>
+      <AppBar position="static" dir="rtl">
+        <Toolbar sx={{ direction: 'rtl' }}>
+          {/* Mobile menu button */}
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { xs: 'block', md: 'none' } }}
           >
-            בית
-          </Button>
-          {isAuthenticated && userEmail === 'asaf.amir@gmail.com' && (
+            <MenuIcon />
+          </IconButton>
+
+          {/* Desktop menu */}
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, gap: 2, justifyContent: 'flex-start' }}>
             <Button 
               color="inherit" 
-              onClick={() => handleNavigation('/register')}
-              startIcon={<PersonAddIcon />}
+              onClick={() => handleNavigation('/')}
+              startIcon={<HomeIcon />}
               sx={{ gap: 1 }}
             >
-              הרשמה
+              בית
             </Button>
-          )}
-          {isAdmin && (
+            {isAuthenticated && userEmail === 'asaf.amir@gmail.com' && (
+              <Button 
+                color="inherit" 
+                onClick={() => handleNavigation('/register')}
+                startIcon={<PersonAddIcon />}
+                sx={{ gap: 1 }}
+              >
+                הרשמה
+              </Button>
+            )}
+            {isAdmin && (
+              <Button 
+                color="inherit" 
+                onClick={() => handleNavigation('/courses')}
+                startIcon={<SchoolIcon />}
+                sx={{ gap: 1 }}
+              >
+                ניהול קורסים פרונטלים
+              </Button>
+            )}
             <Button 
               color="inherit" 
-              onClick={() => handleNavigation('/courses')}
+              onClick={() => handleNavigation('/front-lessons')}
               startIcon={<SchoolIcon />}
               sx={{ gap: 1 }}
             >
-              ניהול קורסים פרונטלים
+              צפייה בשיעורים פרונטליים
+            </Button>
+            <Button 
+              color="inherit"
+              onClick={() => handleNavigation('/video-courses')}
+              startIcon={<AddCircleOutlineIcon />}
+              sx={{ gap: 1 }}
+              style={{ display: isAdmin ? 'inline-flex' : 'none' }}
+            >
+              קורסי וידאו +
+            </Button>
+            <Button 
+              color="inherit" 
+              onClick={() => handleNavigation('/video-courses/view')}
+              startIcon={<PlayCircleOutlineIcon />}
+              sx={{ gap: 1 }}
+            >
+              צפייה בקורסי וידאו
+            </Button>
+            <Button 
+              color="inherit" 
+              onClick={() => handleNavigation('/shared-files')}
+              startIcon={<FolderIcon />}
+              sx={{ gap: 1 }}
+            >
+              קבצי שיעור
+            </Button>
+            <Button 
+              color="inherit" 
+              onClick={() => navigate('/games')}
+              startIcon={<SportsEsportsIcon />}
+              sx={{ gap: 1 }}
+            >
+              משחקים
+            </Button>
+          </Box>
+
+          {/* Mobile title */}
+          <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' }, justifyContent: 'center' }}>
+            <Button 
+              color="inherit" 
+              onClick={() => navigate('/')}
+              sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}
+            >
+              ORT Back Office
+            </Button>
+          </Box>
+
+          {isAuthenticated ? (
+            <Box sx={{ flexGrow: 0 }}>
+              <Tooltip title="פרופיל">
+                <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                  <Avatar sx={{ bgcolor: 'secondary.main' }}>
+                    {avatarLetter}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
+              <Menu
+                sx={{ mt: '45px' }}
+                anchorEl={anchorElUser}
+                anchorOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                open={Boolean(anchorElUser)}
+                onClose={handleCloseUserMenu}
+              >
+                <MenuItem onClick={handleProfile}>
+                  פרופיל
+                </MenuItem>
+                <MenuItem onClick={handleLogout}>
+                  התנתק
+                </MenuItem>
+              </Menu>
+            </Box>
+          ) : (
+            <Button 
+              color="inherit" 
+              onClick={() => navigate('/login')}
+              startIcon={<LoginIcon />}
+              sx={{ gap: 1, display: { xs: 'none', md: 'inline-flex' } }}
+            >
+              התחבר
             </Button>
           )}
-          <Button 
-            color="inherit" 
-            onClick={() => handleNavigation('/front-lessons')}
-            startIcon={<SchoolIcon />}
-            sx={{ gap: 1 }}
-          >
-            צפייה בשיעורים פרונטליים
-          </Button>
-          <Button 
-            color="inherit"
-            onClick={() => handleNavigation('/video-courses')}
-            startIcon={<AddCircleOutlineIcon />}
-            sx={{ gap: 1 }}
-            style={{ display: isAdmin ? 'inline-flex' : 'none' }}
-          >
-            קורסי וידאו +
-          </Button>
-          <Button 
-            color="inherit" 
-            onClick={() => handleNavigation('/video-courses/view')}
-            startIcon={<PlayCircleOutlineIcon />}
-            sx={{ gap: 1 }}
-          >
-            צפייה בקורסי וידאו
-          </Button>
-          <Button 
-            color="inherit" 
-            onClick={() => handleNavigation('/shared-files')}
-            startIcon={<FolderIcon />}
-            sx={{ gap: 1 }}
-          >
-            קבצי שיעור
-          </Button>
-          <Button 
-            color="inherit" 
-            onClick={() => navigate('/games')}
-            startIcon={<SportsEsportsIcon />}
-            sx={{ gap: 1 }}
-          >
-            משחקים
-          </Button>
-        </Box>
-        {isAuthenticated ? (
-          <Box sx={{ flexGrow: 0 }}>
-            <Tooltip title="פרופיל">
-              <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar sx={{ bgcolor: 'secondary.main' }}>
-                  {avatarLetter}
-                </Avatar>
-              </IconButton>
-            </Tooltip>
-            <Menu
-              sx={{ mt: '45px' }}
-              anchorEl={anchorElUser}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorElUser)}
-              onClose={handleCloseUserMenu}
-            >
-              <MenuItem onClick={handleProfile}>
-                פרופיל
-              </MenuItem>
-              <MenuItem onClick={handleLogout}>
-                התנתק
-              </MenuItem>
-            </Menu>
-          </Box>
-        ) : (
-          <Button 
-            color="inherit" 
-            onClick={() => navigate('/login')}
-            startIcon={<LoginIcon />}
-            sx={{ gap: 1 }}
-          >
-            התחבר
-          </Button>
-        )}
-      </Toolbar>
-    </AppBar>
+        </Toolbar>
+      </AppBar>
+
+      {/* Mobile drawer */}
+      <Drawer
+        anchor="right"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile.
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 250 },
+        }}
+      >
+        {drawer}
+      </Drawer>
+    </>
   );
 }
 
