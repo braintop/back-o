@@ -20,6 +20,10 @@ import SharedFiles from '../pages/SharedFiles';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Profile from '../pages/Profile';
 import ForgotPassword from '../pages/ForgotPassword';
+import Games from '../pages/games/Games';
+import SQLEnglishGame from '../pages/games/SQLEnglishGame';
+import Leaderboard from '../pages/games/Leaderboard';
+import GameHistory from '../pages/games/GameHistory';
 
 export default function AppRoutes() {
   return (
@@ -178,6 +182,10 @@ export default function AppRoutes() {
           </ProtectedRoute>
         } 
       />
+      <Route path="/games" element={<Games />} />
+      <Route path="/games/:gameId" element={<SQLEnglishGame />} />
+      <Route path="/games/:gameId/leaderboard" element={<Leaderboard />} />
+      <Route path="/games/:gameId/history" element={<GameHistory />} />
     </Routes>
   );
 }

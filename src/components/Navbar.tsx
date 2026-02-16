@@ -12,6 +12,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import FolderIcon from '@mui/icons-material/Folder';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -47,6 +48,12 @@ export default function Navbar() {
   };
 
   const handleNavigation = (path: string) => {
+    // Games are public, don't require authentication
+    if (path === '/games') {
+      navigate(path);
+      return;
+    }
+    
     if (!isAuthenticated) {
       navigate('/login');
     } else {
@@ -133,6 +140,14 @@ export default function Navbar() {
             sx={{ gap: 1 }}
           >
             קבצי שיעור
+          </Button>
+          <Button 
+            color="inherit" 
+            onClick={() => navigate('/games')}
+            startIcon={<SportsEsportsIcon />}
+            sx={{ gap: 1 }}
+          >
+            משחקים
           </Button>
         </Box>
         {isAuthenticated ? (
